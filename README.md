@@ -80,13 +80,13 @@ the project — group members plus all ADMINs; clicking a row there opens that u
 detail page).
 
 Clicking a group row on the Groups page opens `/groups/{id}`, a detail page with three
-tabs: **Group details** (rename), **Projects** (a multi-select to edit the group's
-permitted projects, plus a clickable list of the current selection rendered the same
-way as the Projects tab on a user's page — Code/Name/Active columns, click through to
-a project's detail page), and **Users** (members of that group, likewise click-through
-to their detail page). Both editable tabs' Save buttons update the same name+projects
-pair, since a group is one entity split across tabs purely for presentation. The Groups
-list page itself is create-only now — editing happens on the detail page.
+tabs: **Group details** (rename), **Projects** (the group's permitted projects, as a
+read-only list — Code/Name/Active columns, click through to a project's detail page,
+same rendering as the Projects tab on a user's page), and **Users** (members of that
+group, likewise click-through to their detail page). The group's project assignments
+are set at creation time on the Groups list page; renaming on the detail page preserves
+them unchanged. The Groups list page itself is create-only — editing (the name) happens
+on the detail page.
 
 Clicking a user row on the Users page opens `/users/{id}`, a detail page with four
 tabs: **User details** (edit profile, role, group, enabled status, and — for non-ADMIN
