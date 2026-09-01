@@ -84,10 +84,12 @@ restricted to ADMIN via `@PreAuthorize` on the REST layer and `@RolesAllowed` on
 corresponding Vaadin views.
 
 Clicking a project row on the Projects page opens `/projects/{id}`, a detail page with
-three tabs: **Project details** (edit name/active status), **Time Entries** (every entry
-logged against the project, across all users), and **Users** (everyone with access to
-the project — group members plus all ADMINs; clicking a row there opens that user's
-detail page).
+four tabs: **Project details** (edit name/active status), **Time Entries** (every entry
+logged against the project, across all users), **Users** (everyone with access to the
+project — group members plus all ADMINs; clicking a row there opens that user's detail
+page), and **Groups** (every group that grants access to this project, plus a picker
+to link an additional existing group — the reciprocal of the Projects tab on a group's
+page).
 
 Clicking a group row on the Groups page opens `/groups/{id}`, a detail page with three
 tabs: **Group details** (rename), **Projects** (the group's permitted projects —
@@ -108,9 +110,12 @@ union of all their groups' projects, or everything for ADMIN; click through to a
 project's detail page). The Users list page is likewise create-only, with the same
 multi-select for initial group assignment.
 
-The three detail pages cross-link every user/group/project reference this way, in both
-directions: a project's or group's "Users" tab links to each user's page, and a user's
-"Groups"/"Projects" tabs link back to those pages.
+The three detail pages fully cross-link every user/group/project relationship, in both
+directions: a project's "Users"/"Groups" tabs and a group's "Users"/"Projects" tabs
+link to those entities' pages, and a user's "Groups"/"Projects" tabs link back. Every
+relationship tab that shows a link also has a picker to add another one, backed by the
+same handful of `addX`-style service methods regardless of which side initiates the
+link.
 
 ## REST API
 
@@ -118,7 +123,8 @@ All endpoints require HTTP Basic auth (same users as the UI). Endpoints that cre
 update projects, groups, or users require the ADMIN role.
 
 - `GET /api/projects`, `GET /api/projects/{id}`, `POST /api/projects` (admin), `PUT /api/projects/{id}` (admin)
-- `GET /api/groups`, `GET /api/groups/{id}`, `POST /api/groups` (admin), `PUT /api/groups/{id}` (admin)
+- `GET /api/groups` (optionally `?projectId=` for groups granting access to a project),
+  `GET /api/groups/{id}`, `POST /api/groups` (admin), `PUT /api/groups/{id}` (admin)
 - `PUT /api/groups/{id}/projects/{projectId}` (admin) — links an existing project to
   the group (a no-op, not an error, if already linked)
 - `GET /api/users` (optionally `?projectId=` for users with access to a project, or

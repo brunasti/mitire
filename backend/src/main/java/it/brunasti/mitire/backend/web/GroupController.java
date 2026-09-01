@@ -22,8 +22,8 @@ public class GroupController {
     }
 
     @GetMapping
-    public List<GroupDto> findAll() {
-        return groupService.findAll();
+    public List<GroupDto> findAll(@RequestParam(required = false) Long projectId) {
+        return projectId != null ? groupService.findByProject(projectId) : groupService.findAll();
     }
 
     @GetMapping("/{id}")

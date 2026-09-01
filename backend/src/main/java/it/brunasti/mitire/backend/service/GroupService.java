@@ -65,6 +65,14 @@ public class GroupService {
     }
 
     @Transactional(readOnly = true)
+    public List<GroupDto> findByProject(Long projectId) {
+        return groupRepository.findAll().stream()
+                .filter(group -> group.getProjects().stream().anyMatch(project -> project.getId().equals(projectId)))
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<ProjectDto> findProjectsForGroup(Long groupId) {
         if (groupId == null) {
             return List.of();
