@@ -23,6 +23,7 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -89,7 +90,7 @@ public class TimeEntriesView extends VerticalLayout {
 
         Button submit = new Button("Submit", e -> {
             if (project.getValue() == null || workDate.getValue() == null || hours.getValue() == null) {
-                Notification.show("Please fill in project, date and hours").addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError("Please fill in project, date and hours");
                 return;
             }
             try {
@@ -104,9 +105,9 @@ public class TimeEntriesView extends VerticalLayout {
                 description.clear();
                 refreshGrid();
             } catch (AccessDeniedException ex) {
-                Notification.show("You don't have access to that project").addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError("You don't have access to that project");
             } catch (IllegalArgumentException ex) {
-                Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError(ex.getMessage());
             }
         });
 

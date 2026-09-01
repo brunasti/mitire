@@ -34,6 +34,7 @@ import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
+import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -171,7 +172,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     private void addGroupLink() {
         GroupDto selected = addGroup.getValue();
         if (selected == null) {
-            Notification.show("Select a group to add").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Select a group to add");
             return;
         }
         UserDto updated = userService.addToGroup(userId, selected.id());
@@ -222,7 +223,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
 
     private void save() {
         if (fullName.getValue().isBlank() || email.getValue().isBlank() || role.getValue() == null) {
-            Notification.show("Full name, email and role are required").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Full name, email and role are required");
             return;
         }
         var groupIds = groups.getSelectedItems().stream().map(GroupDto::id).toList();
@@ -239,7 +240,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
             refreshComputedTabs(updated);
             Notification.show("User updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException | AccessDeniedException ex) {
-            Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError(ex.getMessage());
         }
     }
 

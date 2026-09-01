@@ -16,6 +16,7 @@ import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.RolesAllowed;
 
 @Route(value = "projects", layout = MainLayout.class)
@@ -54,7 +55,7 @@ public class ProjectsView extends VerticalLayout {
 
         Button submit = new Button("Create", e -> {
             if (code.getValue().isBlank() || name.getValue().isBlank()) {
-                Notification.show("Code and name are required").addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError("Code and name are required");
                 return;
             }
             try {
@@ -67,7 +68,7 @@ public class ProjectsView extends VerticalLayout {
                 endDate.clear();
                 refreshGrid();
             } catch (IllegalArgumentException ex) {
-                Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError(ex.getMessage());
             }
         });
 

@@ -21,6 +21,7 @@ import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -93,7 +94,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
 
     private void save() {
         if (hours.getValue() == null) {
-            Notification.show("Hours is required").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Hours is required");
             return;
         }
         try {
@@ -102,7 +103,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
             Notification.show("Time entry updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             goBack();
         } catch (IllegalArgumentException | AccessDeniedException ex) {
-            Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError(ex.getMessage());
         }
     }
 
@@ -123,7 +124,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
             Notification.show("Time entry deleted").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             goBack();
         } catch (AccessDeniedException ex) {
-            Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError(ex.getMessage());
         }
     }
 

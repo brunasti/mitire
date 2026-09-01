@@ -16,6 +16,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.PermitAll;
 
 @Route(value = "profile", layout = MainLayout.class)
@@ -77,24 +78,24 @@ public class ProfileView extends VerticalLayout {
 
     private void saveProfile() {
         if (fullName.getValue().isBlank() || email.getValue().isBlank()) {
-            Notification.show("Full name and email are required").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Full name and email are required");
             return;
         }
         try {
             userService.updateOwnProfile(username, new UpdateOwnProfileRequest(fullName.getValue(), email.getValue()));
             Notification.show("Profile updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
-            Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError(ex.getMessage());
         }
     }
 
     private void changePassword() {
         if (currentPassword.getValue().isBlank() || newPassword.getValue().isBlank()) {
-            Notification.show("Current and new password are required").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Current and new password are required");
             return;
         }
         if (!newPassword.getValue().equals(confirmPassword.getValue())) {
-            Notification.show("New password and confirmation do not match").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("New password and confirmation do not match");
             return;
         }
         try {
@@ -104,7 +105,7 @@ public class ProfileView extends VerticalLayout {
             confirmPassword.clear();
             Notification.show("Password changed").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
-            Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError(ex.getMessage());
         }
     }
 }

@@ -33,6 +33,7 @@ import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
+import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.RolesAllowed;
 
 import java.util.List;
@@ -126,7 +127,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
                 projectNameLabel.setText(updated.name());
                 Notification.show("Project updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (IllegalArgumentException ex) {
-                Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError(ex.getMessage());
             }
         });
 
@@ -189,7 +190,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private void addGroupLink() {
         GroupDto selected = addGroup.getValue();
         if (selected == null) {
-            Notification.show("Select a group to add").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Select a group to add");
             return;
         }
         groupService.addProject(selected.id(), projectId);

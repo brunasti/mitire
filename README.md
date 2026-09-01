@@ -11,6 +11,13 @@ systems to submit or query time entries.
 
 Both modules run in a single deployable Spring Boot application (`ui`'s `bootJar`).
 
+Every validation/error message across the UI (required fields, rejected updates,
+access-denied exceptions caught in a view, etc.) is shown via
+`it.brunasti.mitire.ui.util.Notifications.showError(message)` rather than a plain
+`Notification.show(...)`: a solid dark-orange popup, top-center, held open for 6
+seconds — deliberately more assertive than Vaadin's default pale bottom-left toast, so
+it can't be mistaken for a routine (success) message or missed entirely.
+
 A logged-in user who navigates to a page their role doesn't grant access to (e.g. a
 MEMBER opening `/users`) sees a styled "Access denied" page inside the normal app
 layout, instead of Vaadin's default raw "Could not navigate to '...'" message.

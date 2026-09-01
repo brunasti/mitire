@@ -18,6 +18,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import it.brunasti.mitire.ui.util.Notifications;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -205,7 +206,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
     private void addProjectLink() {
         ProjectDto selected = addProject.getValue();
         if (selected == null) {
-            Notification.show("Select a project to add").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Select a project to add");
             return;
         }
         GroupDto updated = groupService.addProject(groupId, selected.id());
@@ -216,7 +217,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
     private void addUserLink() {
         UserDto selected = addUser.getValue();
         if (selected == null) {
-            Notification.show("Select a user to add").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Select a user to add");
             return;
         }
         userService.addToGroup(selected.id(), groupId);
@@ -239,7 +240,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
 
     private void save() {
         if (name.getValue().isBlank()) {
-            Notification.show("Name is required").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError("Name is required");
             return;
         }
         try {
@@ -247,7 +248,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             groupNameLabel.setText(updated.name());
             Notification.show("Group updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
-            Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+            Notifications.showError(ex.getMessage());
         }
     }
 }

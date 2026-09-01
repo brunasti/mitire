@@ -21,6 +21,7 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.RolesAllowed;
 
 @Route(value = "users", layout = MainLayout.class)
@@ -63,8 +64,7 @@ public class UsersView extends VerticalLayout {
         Button submit = new Button("Create", e -> {
             if (username.getValue().isBlank() || fullName.getValue().isBlank()
                     || email.getValue().isBlank() || password.getValue().isBlank() || role.getValue() == null) {
-                Notification.show("Username, full name, email, password and role are required")
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError("Username, full name, email, password and role are required");
                 return;
             }
             try {
@@ -80,7 +80,7 @@ public class UsersView extends VerticalLayout {
                 groups.clear();
                 refreshGrid();
             } catch (IllegalArgumentException ex) {
-                Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError(ex.getMessage());
             }
         });
 

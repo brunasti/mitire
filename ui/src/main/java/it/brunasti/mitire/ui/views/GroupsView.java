@@ -16,6 +16,7 @@ import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import it.brunasti.mitire.ui.util.Notifications;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
@@ -60,7 +61,7 @@ public class GroupsView extends VerticalLayout {
 
         Button submit = new Button("Create", e -> {
             if (name.getValue().isBlank()) {
-                Notification.show("Name is required").addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError("Name is required");
                 return;
             }
             try {
@@ -71,7 +72,7 @@ public class GroupsView extends VerticalLayout {
                 projects.clear();
                 refreshGrid();
             } catch (IllegalArgumentException ex) {
-                Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
+                Notifications.showError(ex.getMessage());
             }
         });
 
