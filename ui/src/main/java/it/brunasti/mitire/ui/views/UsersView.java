@@ -21,6 +21,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 
@@ -44,9 +45,12 @@ public class UsersView extends VerticalLayout {
 
     private List<GroupDto> groups;
     private Long editingId;
+    private Role editingOriginalRole;
 
     public UsersView(UserService userService, GroupService groupService) {
         this.userService = userService;
+
+        password.setHelperText("Required for new users. When editing, leave blank to keep the current password.");
 
         role.setItems(Role.values());
 
@@ -84,25 +88,30 @@ public class UsersView extends VerticalLayout {
                         password.getValue(), role.getValue(), groupId));
                 Notification.show("User created").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } else {
+                if (!password.getValue().isBlank() && editingOriginalRole != Role.ADMIN) {
+                    userService.updatePassword(editingId, password.getValue());
+                }
                 userService.update(editingId, new UpdateUserRequest(fullName.getValue(), email.getValue(),
                         role.getValue(), groupId, enabled.getValue()));
                 Notification.show("User updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             }
             resetForm();
             refreshGrid();
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException | AccessDeniedException ex) {
             Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
         }
     }
 
     private void resetForm() {
         editingId = null;
+        editingOriginalRole = null;
         username.clear();
         username.setEnabled(true);
         fullName.clear();
         email.clear();
         password.clear();
         password.setEnabled(true);
+        password.setHelperText("Required for new users. When editing, leave blank to keep the current password.");
         role.clear();
         group.clear();
         enabled.setValue(true);
@@ -112,12 +121,16 @@ public class UsersView extends VerticalLayout {
 
     private void edit(UserDto user) {
         editingId = user.id();
+        editingOriginalRole = user.role();
         username.setValue(user.username());
         username.setEnabled(false);
         fullName.setValue(user.fullName());
         email.setValue(user.email());
         password.clear();
-        password.setEnabled(false);
+        password.setEnabled(user.role() != Role.ADMIN);
+        password.setHelperText(user.role() == Role.ADMIN
+                ? "An ADMIN user's password can't be changed here."
+                : "Leave blank to keep the current password.");
         role.setValue(user.role());
         group.setValue(groups.stream().filter(g -> g.id().equals(user.groupId())).findFirst().orElse(null));
         enabled.setValue(user.enabled());

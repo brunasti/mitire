@@ -1,12 +1,14 @@
 package it.brunasti.mitire.backend.service;
 
 import it.brunasti.mitire.backend.domain.Group;
+import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.User;
 import it.brunasti.mitire.backend.repository.GroupRepository;
 import it.brunasti.mitire.backend.repository.UserRepository;
 import it.brunasti.mitire.backend.web.dto.CreateUserRequest;
 import it.brunasti.mitire.backend.web.dto.UpdateUserRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +69,15 @@ public class UserService {
         user.setEnabled(request.enabled());
         user.setGroup(resolveGroup(request.groupId()));
 
+        return toDto(userRepository.save(user));
+    }
+
+    public UserDto updatePassword(Long id, String newPassword) {
+        User user = getReference(id);
+        if (user.getRole() == Role.ADMIN) {
+            throw new AccessDeniedException("Cannot change the password of an ADMIN user");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
         return toDto(userRepository.save(user));
     }
 

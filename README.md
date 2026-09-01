@@ -81,6 +81,8 @@ update projects, groups, or users require the ADMIN role.
 - `GET /api/projects`, `POST /api/projects` (admin)
 - `GET /api/groups`, `POST /api/groups` (admin), `PUT /api/groups/{id}` (admin)
 - `GET /api/users`, `POST /api/users` (admin), `PUT /api/users/{id}` (admin)
+- `PUT /api/users/{id}/password` (admin) — resets a non-ADMIN user's password; rejected
+  with 403 if the target user is an ADMIN, even for another admin
 - `GET /api/time-entries?userId=&projectId=&from=&to=`, `POST /api/time-entries`
 
 ```bash
