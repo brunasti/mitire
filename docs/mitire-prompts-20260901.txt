@@ -2,11 +2,12 @@ Mitire project — user prompts log
 Generated: 2026-09-01
 
 NOTE: Prompts 1-11 below are the original verbatim/near-verbatim log saved earlier
-in this session. Prompts 12 onward are reconstructed from conversation context
-(there is no reliable automated transcript covering them — a .claude/ hook that
-appears to have been set up for this purpose never actually produced
-docs/mitire-prompts.md), so wording past prompt 11 is a faithful best-effort
-reconstruction of intent and phrasing rather than a guaranteed byte-exact quote.
+in this session. Prompts 12-34 were reconstructed from conversation context (there is
+no reliable automated transcript covering them — a .claude/ hook that appears to have
+been set up for this purpose never actually produced docs/mitire-prompts.md), so
+wording in that range is a faithful best-effort reconstruction rather than a
+guaranteed byte-exact quote. Prompts 35 onward are exact verbatim quotes, copied
+directly from live conversation turns still in context at the time of writing.
 
 ================================================================================
 Prompt 1
@@ -206,5 +207,121 @@ IN the http://localhost:8080/users/<id> page, please add next to the "<- Back to
 
 ================================================================================
 Prompt 34
+================================================================================
+could you save into a text file all the prompts I have given you up to now, in a file called docs/mitire-prompts-<today date in yyymmdd format>.txt ?
+
+================================================================================
+Prompt 35
+================================================================================
+In the http://localhost:8080/projects page, could you:
+1- add a title "Projects" on top of the page, next to the "Mitire" label
+2- Divide the content of the page in two tabs, the first with the list of the Projects, the second with the form to add a new Project
+3- enable the list to be sorted even by the other columns, in particular the Name
+
+================================================================================
+Prompt 36
+================================================================================
+Can you improve the look and feel of the error page that is shown when an user in not autorised to access a page, with something more then the brute message "Could not navigate to 'users'" ?
+
+================================================================================
+Prompt 37
+================================================================================
+In the http://localhost:8080/groups page, could you:
+1- add a title "Groups" on top of the page, next to the "Mitire" label
+2- Divide the content of the page in two tabs, the first with the list of the Groups, the second with the form to add a new Group
+3- enable the list to be sorted even by the other columns, in particular the Name
+4- add in the list, a column with the users of the group, as you have already done for the projects
+
+================================================================================
+Prompt 38
+================================================================================
+In the http://localhost:8080/users page, could you:
+1- add a title "Users" on top of the page, next to the "Mitire" label
+2- Divide the content of the page in two tabs, the first with the list of the Users, the second with the form to add a new User
+
+================================================================================
+Prompt 39
+================================================================================
+3- enable the list to be sorted even by the other columns
+
+================================================================================
+Prompt 40
+================================================================================
+Transform the top left icon into a button, which navigate to the http://localhost:8080/ page when clicked
+
+================================================================================
+Prompt 41
+================================================================================
+To the left of the User prifile icon on the top, can you please put the Name of the logged in User?
+
+================================================================================
+Prompt 42
+================================================================================
+In the home page, could you separate the form for the creation of the time entry and the list of the already created time entries?
+
+================================================================================
+Prompt 43
+================================================================================
+Please switch the position of the "Time Entries" and the "Add Time Entry"?
+
+================================================================================
+Prompt 44
+================================================================================
+Can you change the name "Mitire" into "MiTiRe" ?
+
+================================================================================
+Prompt 45
+================================================================================
+Add a start and an end date to a project
+
+================================================================================
+Prompt 46
+================================================================================
+Add the start and end date to the projects list in the page http://localhost:8080/projects ?
+
+================================================================================
+Prompt 47
+================================================================================
+In the dropdown list of the "Add Time Entry" Project, do not include the Projects which are not active
+
+================================================================================
+Prompt 48
+================================================================================
+Could you reduce the size of the start and end date, to the same size used for the "Add Time Entry"?
+
+================================================================================
+Prompt 49
+================================================================================
+Add a validation on the creation or editing of a time entry:
+- no more then 24 hours per day (checking with the already existing entries)
+- date can't be before the start date of the project or after the end date (if these values are null, then no check is done)
+
+================================================================================
+Prompt 50
+================================================================================
+The warning messages should be a more visible popup, with colour at least orange
+
+================================================================================
+Prompt 51
+================================================================================
+Could you try to reduce the size of the start and end date shown in the http://localhost:8080/projects/<id> page, to the same size used for the "Add Time Entry"?
+
+================================================================================
+Prompt 52
+================================================================================
+In the http://localhost:8080/login page, can you add the icon of the MiTiRe project?
+
+================================================================================
+Prompt 53
+================================================================================
+In the http://localhost:8080/time-entries/<id> page, add the name of the user who created the entry, and enable the navigation from this page to the corresponding project by a click on the project name, and from this page to the user profile by a click on the user name
+
+================================================================================
+Prompt 54
+================================================================================
+IN the http://localhost:8080/projects/<id> page, in the Time Entries list, add the navigation from the row in the list to the detail page http://localhost:8080/time-entries/<entry_id>
+
+================================================================================
+Prompt 55
 ================================================================================
 could you save into a text file all the prompts I have given you up to now, in a file called docs/mitire-prompts-<today date in yyymmdd format>.txt ?
