@@ -5,6 +5,7 @@ import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -18,13 +19,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class MainLayout extends AppLayout {
 
     public MainLayout(AuthenticationContext authenticationContext) {
+        Image logo = new Image("mitire-icon.png", "Mitire logo");
+        logo.setHeight("32px");
+        logo.setWidth("32px");
+
         H1 title = new H1("Mitire");
         title.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.MEDIUM);
 
         Button logout = new Button("Log out", e -> authenticationContext.logout());
         logout.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        HorizontalLayout header = new HorizontalLayout(new DrawerToggle(), title, logout);
+        HorizontalLayout header = new HorizontalLayout(logo, new DrawerToggle(), title, logout);
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         header.setWidthFull();
         header.expand(title);

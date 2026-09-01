@@ -11,6 +11,13 @@ systems to submit or query time entries.
 
 Both modules run in a single deployable Spring Boot application (`ui`'s `bootJar`).
 
+The app icon lives at `backend/src/main/resources/static/mitire-icon.png`, served by
+Spring's default static resource handling at `/mitire-icon.png`. It's used as the
+browser-tab favicon (registered via `Application.configurePage()`, which Vaadin's
+security layer automatically detects and permits for unauthenticated requests — no
+manual security config needed) and as the logo shown to the left of the drawer toggle
+in `MainLayout`.
+
 ## Requirements
 
 - Java 21 (a `gradle/gradle-daemon-jvm.properties` file pins the Gradle daemon to 21 and
