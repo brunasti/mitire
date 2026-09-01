@@ -1,0 +1,19 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: mitire
+  datasource:
+    url: jdbc:postgresql://localhost:5433/mitire
+    username: mitire
+    password: mitire
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+vaadin:
+  launch-browser: true

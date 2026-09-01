@@ -1,0 +1,12 @@
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+out/
+.idea/
+*.iml
+.vscode/
+node_modules/
+**/frontend/generated/
+**/vaadin-featureflags.properties
+.env
+*.log
