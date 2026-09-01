@@ -83,8 +83,9 @@ computes the same union-of-groups policy (or "everything" for ADMIN) for every
 restricted to ADMIN via `@PreAuthorize` on the REST layer and `@RolesAllowed` on the
 corresponding Vaadin views.
 
-Clicking a project row on the Projects page opens `/projects/{id}`, a detail page with
-four tabs: **Project details** (edit name/active status), **Time Entries** (every entry
+Clicking a project row on the Projects page opens `/projects/{id}`, showing the
+project's name next to the "← Back to projects" link, with four tabs: **Project
+details** (edit name/active status), **Time Entries** (every entry
 logged against the project, across all users), **Users** (everyone with access to the
 project — group members plus all ADMINs; clicking a row there opens that user's detail
 page), and **Groups** (every group that grants access to this project, a picker to link

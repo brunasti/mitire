@@ -17,6 +17,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -51,6 +52,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final TextField name = new TextField("Name");
     private final Checkbox active = new Checkbox("Active");
     private final ComboBox<GroupDto> addGroup = new ComboBox<>("Add group");
+    private final Span projectNameLabel = new Span();
 
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
@@ -80,7 +82,11 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         tabSheet.add("Groups", buildGroupsTab());
         tabSheet.setSizeFull();
 
-        add(new RouterLink("← Back to projects", ProjectsView.class), tabSheet);
+        projectNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
+        HorizontalLayout header = new HorizontalLayout(new RouterLink("← Back to projects", ProjectsView.class), projectNameLabel);
+        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+
+        add(header, tabSheet);
         setFlexGrow(1, tabSheet);
     }
 
@@ -92,6 +98,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             code.setValue(project.code());
             name.setValue(project.name());
             active.setValue(project.active());
+            projectNameLabel.setText(project.name());
         } catch (NoSuchElementException ex) {
             event.rerouteToError(NotFoundException.class, "Project not found");
             return;
