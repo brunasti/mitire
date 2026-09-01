@@ -1,5 +1,6 @@
 package it.brunasti.mitire.ui.views;
 
+import it.brunasti.mitire.backend.service.UserService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -7,6 +8,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -20,13 +22,23 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @PermitAll
 public class MainLayout extends AppLayout {
 
-    public MainLayout(AuthenticationContext authenticationContext) {
-        Image logo = new Image("mitire-icon.png", "Mitire logo");
-        logo.setHeight("32px");
-        logo.setWidth("32px");
+    public MainLayout(AuthenticationContext authenticationContext, UserService userService) {
+        Image logoIcon = new Image("mitire-icon.png", "MiTiRe logo");
+        logoIcon.setHeight("32px");
+        logoIcon.setWidth("32px");
 
-        H1 title = new H1("Mitire");
+        Button logo = new Button(logoIcon, e -> UI.getCurrent().navigate(""));
+        logo.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
+        logo.setTooltipText("Home");
+
+        H1 title = new H1("MiTiRe");
         title.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.MEDIUM);
+
+        String fullName = authenticationContext.getAuthenticatedUser(org.springframework.security.core.userdetails.User.class)
+                .map(user -> userService.getByUsername(user.getUsername()).fullName())
+                .orElse("");
+        Span userName = new Span(fullName);
+        userName.getStyle().set("margin-right", "0.25rem");
 
         Button profile = new Button(VaadinIcon.USER.create(), e -> UI.getCurrent().navigate(ProfileView.class));
         profile.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
@@ -35,7 +47,7 @@ public class MainLayout extends AppLayout {
         Button logout = new Button("Log out", e -> authenticationContext.logout());
         logout.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        HorizontalLayout header = new HorizontalLayout(logo, new DrawerToggle(), title, profile, logout);
+        HorizontalLayout header = new HorizontalLayout(logo, new DrawerToggle(), title, userName, profile, logout);
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         header.setWidthFull();
         header.expand(title);

@@ -2,17 +2,21 @@ package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.service.GroupService;
 import it.brunasti.mitire.backend.service.ProjectService;
+import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.CreateGroupRequest;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
+import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -21,18 +25,29 @@ import jakarta.annotation.security.RolesAllowed;
 import java.util.stream.Collectors;
 
 @Route(value = "groups", layout = MainLayout.class)
-@PageTitle("Groups | Mitire")
+@PageTitle("Groups | MiTiRe")
 @RolesAllowed("ADMIN")
 public class GroupsView extends VerticalLayout {
 
     private final GroupService groupService;
+    private final UserService userService;
     private final Grid<GroupDto> grid = new Grid<>(GroupDto.class, false);
 
-    public GroupsView(GroupService groupService, ProjectService projectService) {
+    public GroupsView(GroupService groupService, ProjectService projectService, UserService userService) {
         this.groupService = groupService;
+        this.userService = userService;
 
-        add(buildForm(projectService));
-        add(buildGrid());
+        setSizeFull();
+
+        H2 title = new H2("Groups");
+
+        TabSheet tabSheet = new TabSheet();
+        tabSheet.add("Groups", buildGrid());
+        tabSheet.add("Add Group", buildForm(projectService));
+        tabSheet.setSizeFull();
+
+        add(title, tabSheet);
+        setFlexGrow(1, tabSheet);
 
         refreshGrid();
     }
@@ -60,15 +75,19 @@ public class GroupsView extends VerticalLayout {
             }
         });
 
-        return new FormLayout(name, projects, submit);
+        FormLayout form = new FormLayout(name, projects, submit);
+        form.setMaxWidth("600px");
+        return form;
     }
 
     private Grid<GroupDto> buildGrid() {
         grid.addColumn(GroupDto::name).setHeader("Name").setSortable(true);
         grid.addColumn(g -> g.projects().stream().map(ProjectDto::code).collect(Collectors.joining(", ")))
-                .setHeader("Projects");
-        grid.setWidthFull();
-        grid.setHeight("400px");
+                .setHeader("Projects").setSortable(true);
+        grid.addColumn(g -> userService.findByGroup(g.id()).stream().map(UserDto::username)
+                        .collect(Collectors.joining(", ")))
+                .setHeader("Users").setSortable(true);
+        grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(GroupDetailView.class, e.getItem().id()));
         return grid;

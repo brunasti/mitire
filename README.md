@@ -1,4 +1,4 @@
-# Mitire
+# MiTiRe
 
 Team time reporting: a Vaadin UI for entering and reviewing time reports, backed by a
 Spring Boot / Spring Data JPA domain layer that also exposes a REST API for other
@@ -11,12 +11,22 @@ systems to submit or query time entries.
 
 Both modules run in a single deployable Spring Boot application (`ui`'s `bootJar`).
 
+A logged-in user who navigates to a page their role doesn't grant access to (e.g. a
+MEMBER opening `/users`) sees a styled "Access denied" page inside the normal app
+layout, instead of Vaadin's default raw "Could not navigate to '...'" message.
+`AccessDeniedView` implements `HasErrorParameter<AccessDeniedException>`, which
+Vaadin's routing automatically prefers over its own built-in handler for that
+exception type (any application-provided handler for an exception class takes
+priority over the framework's default, per `@DefaultErrorHandler`'s own contract).
+
 The app icon lives at `backend/src/main/resources/static/mitire-icon.png`, served by
 Spring's default static resource handling at `/mitire-icon.png`. It's used as the
 browser-tab favicon (registered via `Application.configurePage()`, which Vaadin's
 security layer automatically detects and permits for unauthenticated requests — no
 manual security config needed) and as the logo shown to the left of the drawer toggle
-in `MainLayout`.
+in `MainLayout`, where it's wrapped in a button that navigates to the home page (`/`)
+when clicked. The logged-in user's full name is shown to the left of the "My profile"
+icon button.
 
 ## Requirements
 
@@ -83,6 +93,10 @@ computes the same union-of-groups policy (or "everything" for ADMIN) for every
 restricted to ADMIN via `@PreAuthorize` on the REST layer and `@RolesAllowed` on the
 corresponding Vaadin views.
 
+The Projects page (`/projects`) shows a "Projects" heading and splits its content into
+two tabs: **Projects** (the sortable list — Code, Name and Active columns can all be
+sorted) and **Add Project** (the creation form).
+
 Clicking a project row on the Projects page opens `/projects/{id}`, showing the
 project's name next to the "← Back to projects" link (kept live after a rename), with
 four tabs: **Project details** (edit name/active status), **Time Entries** (every entry
@@ -91,6 +105,10 @@ project — group members plus all ADMINs; clicking a row there opens that user'
 page), and **Groups** (every group that grants access to this project, a picker to link
 an additional existing group, and a trashcan icon per row to unlink one — with
 confirmation — the reciprocal of the Projects tab on a group's page).
+
+The Groups page (`/groups`) shows a "Groups" heading and splits its content into two
+tabs: **Groups** (the sortable list — Name, Projects and Users columns can all be
+sorted) and **Add Group** (the creation form).
 
 Clicking a group row on the Groups page opens `/groups/{id}`, showing the group's name
 next to the "← Back to groups" link (kept live after a rename), with three tabs:
@@ -101,6 +119,10 @@ confirmation), and **Users** (members of that group, likewise click-through to t
 detail page, a picker to link an additional existing user, and a trashcan icon per row
 to remove one from the group — with confirmation). The Groups list page is create-only
 — editing happens on the detail page.
+
+The Users page (`/users`) shows a "Users" heading and splits its content into two
+tabs: **Users** (the sortable list — Username, Full name, Email, Role, Groups and
+Enabled columns can all be sorted) and **Add User** (the creation form).
 
 Clicking a user row on the Users page opens `/users/{id}`, showing the user's full name
 next to the "← Back to users" link (kept live after an edit), with four tabs: **User
@@ -124,7 +146,11 @@ link.
 
 ## Time entries
 
-Clicking a row on the home page (`/`, your own time entries) opens `/time-entries/{id}`
+The home page (`/`) shows a "Time Report System" heading and splits its content into
+two tabs: **Add Time Entry** (the creation form) and **Time Entries** (your own
+entries, sortable by Date and Project).
+
+Clicking a row on the Time Entries tab (your own time entries) opens `/time-entries/{id}`
 to edit it: Hours and Description are the only editable fields (project/date/status are
 shown read-only — creating a new entry for a different project/date is a separate
 action from the home page's form). **Save** persists and returns to `/`; **Cancel**

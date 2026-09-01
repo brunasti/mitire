@@ -1,7 +1,6 @@
 package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.service.UserService;
-import it.brunasti.mitire.backend.web.dto.ChangeOwnPasswordRequest;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.UpdateOwnProfileRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
@@ -20,7 +19,7 @@ import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
 
 @Route(value = "profile", layout = MainLayout.class)
-@PageTitle("My Profile | Mitire")
+@PageTitle("My Profile | MiTiRe")
 @PermitAll
 public class ProfileView extends VerticalLayout {
 

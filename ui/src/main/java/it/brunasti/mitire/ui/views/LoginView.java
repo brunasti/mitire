@@ -8,14 +8,14 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 
 @Route("login")
-@PageTitle("Log in | Mitire")
+@PageTitle("Log in | MiTiRe")
 @AnonymousAllowed
 public class LoginView extends LoginOverlay implements BeforeEnterObserver {
 
     public LoginView() {
         setAction("login");
         setOpened(true);
-        setTitle("Mitire");
+        setTitle("MiTiRe");
         setDescription("Team time reporting");
         setForgotPasswordButtonVisible(false);
     }

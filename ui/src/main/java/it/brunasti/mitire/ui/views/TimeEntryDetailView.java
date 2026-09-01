@@ -28,7 +28,7 @@ import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 
 @Route(value = "time-entries", layout = MainLayout.class)
-@PageTitle("Edit time entry | Mitire")
+@PageTitle("Edit time entry | MiTiRe")
 @PermitAll
 public class TimeEntryDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 

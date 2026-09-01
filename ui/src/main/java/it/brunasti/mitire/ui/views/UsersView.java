@@ -8,14 +8,15 @@ import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
@@ -23,7 +24,7 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 
 @Route(value = "users", layout = MainLayout.class)
-@PageTitle("Users | Mitire")
+@PageTitle("Users | MiTiRe")
 @RolesAllowed("ADMIN")
 public class UsersView extends VerticalLayout {
 
@@ -33,8 +34,17 @@ public class UsersView extends VerticalLayout {
     public UsersView(UserService userService, GroupService groupService) {
         this.userService = userService;
 
-        add(buildForm(groupService));
-        add(buildGrid());
+        setSizeFull();
+
+        H2 title = new H2("Users");
+
+        TabSheet tabSheet = new TabSheet();
+        tabSheet.add("Users", buildGrid());
+        tabSheet.add("Add User", buildForm(groupService));
+        tabSheet.setSizeFull();
+
+        add(title, tabSheet);
+        setFlexGrow(1, tabSheet);
 
         refreshGrid();
     }
@@ -74,19 +84,20 @@ public class UsersView extends VerticalLayout {
             }
         });
 
-        return new FormLayout(username, fullName, email, password, role, groups, submit);
+        FormLayout form = new FormLayout(username, fullName, email, password, role, groups, submit);
+        form.setMaxWidth("600px");
+        return form;
     }
 
     private Grid<UserDto> buildGrid() {
         grid.addColumn(UserDto::username).setHeader("Username").setSortable(true);
-        grid.addColumn(UserDto::fullName).setHeader("Full name");
-        grid.addColumn(UserDto::email).setHeader("Email");
-        grid.addColumn(UserDto::role).setHeader("Role");
+        grid.addColumn(UserDto::fullName).setHeader("Full name").setSortable(true);
+        grid.addColumn(UserDto::email).setHeader("Email").setSortable(true);
+        grid.addColumn(UserDto::role).setHeader("Role").setSortable(true);
         grid.addColumn(u -> u.groups().stream().map(GroupDto::name).reduce((a, b) -> a + ", " + b).orElse("-"))
-                .setHeader("Groups");
-        grid.addColumn(UserDto::enabled).setHeader("Enabled");
-        grid.setWidthFull();
-        grid.setHeight("400px");
+                .setHeader("Groups").setSortable(true);
+        grid.addColumn(UserDto::enabled).setHeader("Enabled").setSortable(true);
+        grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));
         return grid;

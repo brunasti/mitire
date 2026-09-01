@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 @Route(value = "users", layout = MainLayout.class)
-@PageTitle("User details | Mitire")
+@PageTitle("User details | MiTiRe")
 @RolesAllowed("ADMIN")
 public class UserDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 

@@ -1,6 +1,13 @@
 Mitire project — user prompts log
 Generated: 2026-09-01
 
+NOTE: Prompts 1-11 below are the original verbatim/near-verbatim log saved earlier
+in this session. Prompts 12 onward are reconstructed from conversation context
+(there is no reliable automated transcript covering them — a .claude/ hook that
+appears to have been set up for this purpose never actually produced
+docs/mitire-prompts.md), so wording past prompt 11 is a faithful best-effort
+reconstruction of intent and phrasing rather than a guaranteed byte-exact quote.
+
 ================================================================================
 Prompt 1
 ================================================================================
@@ -82,3 +89,122 @@ OK
 Prompt 11
 ================================================================================
 could you save into a text file all the prompts I have given you up to now, in a file called mitire-prompts-<today date in yyymmdd format>.txt ?
+
+================================================================================
+Prompt 12
+================================================================================
+In the http://localhost:8080/projects/<id> page, when clicking on a project, a new page with the details of the project should open. In that page there should be 3 tabs: "Project details", "Time Entries", "Users".
+
+================================================================================
+Prompt 13
+================================================================================
+Please always restart the service if port 8080 is in use.
+
+================================================================================
+Prompt 14
+================================================================================
+Could you please, at the end, restart it?
+
+(Asking that the app be left running after testing/verification, instead of being stopped.)
+
+================================================================================
+Prompt 15
+================================================================================
+In the http://localhost:8080/groups page, when clicking on a group, a new page with the details of the group should open, with 3 tabs: "Group details", "Projects", "Users".
+
+================================================================================
+Prompt 16
+================================================================================
+In the http://localhost:8080/users page, when clicking on a user, a new page should open, with four tabs: "User details", "Time recordings" (containing the time entries), "Groups", and "Projects" (the projects this user can access).
+
+================================================================================
+Prompt 17
+================================================================================
+Please enable the navigation from the http://localhost:8080/projects/<id> page to the different users referred in the tab "Users" (to the page http://localhost:8080/users/<user_id>), and the same from http://localhost:8080/groups/<group_id>.
+
+================================================================================
+Prompt 18
+================================================================================
+Please enable even the reverse of the navigations you just added.
+
+================================================================================
+Prompt 19
+================================================================================
+In the http://localhost:8080/groups/<id> page, could you render the projects in the same way it's done in the page http://localhost:8080/users/<id> ?
+
+================================================================================
+Prompt 20
+================================================================================
+In the http://localhost:8080/groups/<id> page, in the Projects tab, please remove the Accessible projects dropdown.
+
+================================================================================
+Prompt 21
+================================================================================
+There is a missing part: each user can be part of multiple groups. So there must be a many-to-many relation between users and groups.
+
+================================================================================
+Prompt 22
+================================================================================
+I added an icon for the application (backend/src/main/resources/mitire-icon.png) — could you use it as the app's logo, shown in the top-left of the web pages next to the burger/drawer toggle, and also as the browser tab's favicon?
+
+================================================================================
+Prompt 23
+================================================================================
+Could you please make it possible in the http://localhost:8080/users/<id> page, tab Groups, to add a new link to an existing Group?
+
+================================================================================
+Prompt 24
+================================================================================
+Good, now do the reverse from Group to User: in http://localhost:8080/groups/<id> enable adding an existing user. Then do the same between Group and Project.
+
+================================================================================
+Prompt 25
+================================================================================
+IN the http://localhost:8080/groups/<id> page, add a tab "Projects", with the links corresponding.
+
+(Clarified via a follow-up question, since the Group page already had a Projects tab — understood and confirmed to mean: add a reciprocal "Groups" tab to the Project detail page.)
+
+================================================================================
+Prompt 26
+================================================================================
+Next to the "Log out" button, please add a button with a User icon that opens a page where the logged-in user can view their own details and change their own password.
+
+================================================================================
+Prompt 27
+================================================================================
+In the http://localhost:8080/groups/<id> page, in the list of the Projects and Users, enable to delete a single row with a trashcan icon in the line, asking for confirmation.
+
+================================================================================
+Prompt 28
+================================================================================
+In the http://localhost:8080/projects/<id> page, in the list of the Groups, enable to delete a single row with a trashcan icon in the line, asking for confirmation.
+
+================================================================================
+Prompt 29
+================================================================================
+In the http://localhost:8080/users/<id> page, in the list of the Groups, enable to delete a single row with a trashcan icon in the line, asking for confirmation.
+
+================================================================================
+Prompt 30
+================================================================================
+In the http://localhost:8080/ page, allow the user to edit the time entries by clicking on them. An editing page should open, where the user can change: Hours and Description. There should be three buttons, Save, Cancel, Delete. The Delete requires a confirmation. Each succesful action would return to the first page.
+
+================================================================================
+Prompt 31
+================================================================================
+IN the http://localhost:8080/projects/<id> page, please add next to the "<- Back to ..." (on the right) the name of the Project itself.
+
+================================================================================
+Prompt 32
+================================================================================
+IN the http://localhost:8080/groups/<id> page, please add next to the "<- Back to ..." (on the right) the name of the Group itself.
+
+================================================================================
+Prompt 33
+================================================================================
+IN the http://localhost:8080/users/<id> page, please add next to the "<- Back to ..." (on the right) the name of the User itself.
+
+================================================================================
+Prompt 34
+================================================================================
+could you save into a text file all the prompts I have given you up to now, in a file called docs/mitire-prompts-<today date in yyymmdd format>.txt ?

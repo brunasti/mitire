@@ -7,16 +7,18 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 
 @Route(value = "projects", layout = MainLayout.class)
-@PageTitle("Projects | Mitire")
+@PageTitle("Projects | MiTiRe")
 @RolesAllowed("ADMIN")
 public class ProjectsView extends VerticalLayout {
 
@@ -26,8 +28,17 @@ public class ProjectsView extends VerticalLayout {
     public ProjectsView(ProjectService projectService) {
         this.projectService = projectService;
 
-        add(buildForm());
-        add(buildGrid());
+        setSizeFull();
+
+        H2 title = new H2("Projects");
+
+        TabSheet tabSheet = new TabSheet();
+        tabSheet.add("Projects", buildGrid());
+        tabSheet.add("Add Project", buildForm());
+        tabSheet.setSizeFull();
+
+        add(title, tabSheet);
+        setFlexGrow(1, tabSheet);
 
         refreshGrid();
     }
@@ -52,15 +63,16 @@ public class ProjectsView extends VerticalLayout {
             }
         });
 
-        return new FormLayout(code, name, submit);
+        FormLayout form = new FormLayout(code, name, submit);
+        form.setMaxWidth("600px");
+        return form;
     }
 
     private Grid<ProjectDto> buildGrid() {
         grid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
-        grid.addColumn(ProjectDto::name).setHeader("Name");
-        grid.addColumn(ProjectDto::active).setHeader("Active");
-        grid.setWidthFull();
-        grid.setHeight("400px");
+        grid.addColumn(ProjectDto::name).setHeader("Name").setSortable(true);
+        grid.addColumn(ProjectDto::active).setHeader("Active").setSortable(true);
+        grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
         return grid;

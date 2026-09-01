@@ -39,7 +39,7 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Route(value = "projects", layout = MainLayout.class)
-@PageTitle("Project details | Mitire")
+@PageTitle("Project details | MiTiRe")
 @RolesAllowed("ADMIN")
 public class ProjectDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 

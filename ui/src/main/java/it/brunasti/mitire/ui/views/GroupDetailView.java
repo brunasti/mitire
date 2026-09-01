@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 @Route(value = "groups", layout = MainLayout.class)
-@PageTitle("Group details | Mitire")
+@PageTitle("Group details | MiTiRe")
 @RolesAllowed("ADMIN")
 public class GroupDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 

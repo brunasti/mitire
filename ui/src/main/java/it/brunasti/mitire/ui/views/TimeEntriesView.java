@@ -12,11 +12,14 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.NumberField;
-import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
@@ -28,7 +31,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Route(value = "", layout = MainLayout.class)
-@PageTitle("Time entries | Mitire")
+@PageTitle("Time entries | MiTiRe")
 @PermitAll
 public class TimeEntriesView extends VerticalLayout {
 
@@ -47,8 +50,17 @@ public class TimeEntriesView extends VerticalLayout {
 
         List<ProjectDto> accessibleProjects = userService.findAccessibleProjects(currentUserId);
 
-        add(buildForm(accessibleProjects));
-        add(buildGrid());
+        setSizeFull();
+
+        H2 title = new H2("Time Report System");
+
+        TabSheet tabSheet = new TabSheet();
+        tabSheet.add("Add Time Entry", buildForm(accessibleProjects));
+        tabSheet.add("Time Entries", buildGrid());
+        tabSheet.setSizeFull();
+
+        add(title, tabSheet);
+        setFlexGrow(1, tabSheet);
 
         refreshGrid();
     }
@@ -59,13 +71,19 @@ public class TimeEntriesView extends VerticalLayout {
         project.setItemLabelGenerator(p -> p.code() + " - " + p.name());
 
         DatePicker workDate = new DatePicker("Date", LocalDate.now());
+        workDate.setWidth("160px");
+
         NumberField hours = new NumberField("Hours");
         hours.setStep(0.25);
         hours.setMin(0.25);
         hours.setMax(24);
         hours.setValue(8.0);
+        hours.setWidth("100px");
 
-        TextField description = new TextField("Description");
+        HorizontalLayout dateAndHours = new HorizontalLayout(workDate, hours);
+
+        TextArea description = new TextArea("Description");
+        description.setHeight("150px");
 
         Button submit = new Button("Submit", e -> {
             if (project.getValue() == null || workDate.getValue() == null || hours.getValue() == null) {
@@ -88,8 +106,9 @@ public class TimeEntriesView extends VerticalLayout {
             }
         });
 
-        FormLayout form = new FormLayout(project, workDate, hours, description, submit);
+        FormLayout form = new FormLayout(project, dateAndHours, description, submit);
         form.setColspan(description, 2);
+        form.setMaxWidth("600px");
         return form;
     }
 
@@ -99,8 +118,7 @@ public class TimeEntriesView extends VerticalLayout {
         grid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         grid.addColumn(TimeEntryDto::description).setHeader("Description");
         grid.addColumn(TimeEntryDto::status).setHeader("Status");
-        grid.setWidthFull();
-        grid.setHeight("400px");
+        grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));
         return grid;
