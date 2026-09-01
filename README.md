@@ -93,11 +93,12 @@ page).
 
 Clicking a group row on the Groups page opens `/groups/{id}`, a detail page with three
 tabs: **Group details** (rename), **Projects** (the group's permitted projects —
-Code/Name/Active columns, click through to a project's detail page, plus a picker to
-link an additional existing project), and **Users** (members of that group, likewise
-click-through to their detail page, plus a picker to link an additional existing user
-to the group). The Groups list page is create-only — editing happens on the detail
-page.
+Code/Name/Active columns, click through to a project's detail page, a picker to link an
+additional existing project, and a trashcan icon per row to unlink one — with
+confirmation), and **Users** (members of that group, likewise click-through to their
+detail page, a picker to link an additional existing user, and a trashcan icon per row
+to remove one from the group — with confirmation). The Groups list page is create-only
+— editing happens on the detail page.
 
 Clicking a user row on the Users page opens `/users/{id}`, a detail page with four
 tabs: **User details** (edit profile, role, groups — a multi-select, since a user can
@@ -149,11 +150,15 @@ update projects, groups, or users require the ADMIN role.
   `GET /api/groups/{id}`, `POST /api/groups` (admin), `PUT /api/groups/{id}` (admin)
 - `PUT /api/groups/{id}/projects/{projectId}` (admin) — links an existing project to
   the group (a no-op, not an error, if already linked)
+- `DELETE /api/groups/{id}/projects/{projectId}` (admin) — unlinks the project from the
+  group (a no-op, not an error, if not linked)
 - `GET /api/users` (optionally `?projectId=` for users with access to a project, or
   `?groupId=` for members of a group), `GET /api/users/{id}`, `POST /api/users`
   (admin), `PUT /api/users/{id}` (admin)
 - `PUT /api/users/{id}/groups/{groupId}` (admin) — links an existing group to the user
   (a no-op, not an error, if already linked)
+- `DELETE /api/users/{id}/groups/{groupId}` (admin) — removes the user from the group
+  (a no-op, not an error, if not a member)
 - `PUT /api/users/{id}/password` (admin) — resets a non-ADMIN user's password; rejected
   with 403 if the target user is an ADMIN, even for another admin
 - `GET /api/users/me`, `PUT /api/users/me` (update own full name/email), `PUT

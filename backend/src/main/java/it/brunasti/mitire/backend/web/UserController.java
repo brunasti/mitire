@@ -81,4 +81,10 @@ public class UserController {
     public UserDto addToGroup(@PathVariable Long id, @PathVariable Long groupId) {
         return userService.addToGroup(id, groupId);
     }
+
+    @DeleteMapping("/{id}/groups/{groupId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDto removeFromGroup(@PathVariable Long id, @PathVariable Long groupId) {
+        return userService.removeFromGroup(id, groupId);
+    }
 }

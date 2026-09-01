@@ -132,6 +132,12 @@ public class UserService {
         return toDto(userRepository.save(user));
     }
 
+    public UserDto removeFromGroup(Long userId, Long groupId) {
+        User user = getReference(userId);
+        user.getGroups().removeIf(group -> group.getId().equals(groupId));
+        return toDto(userRepository.save(user));
+    }
+
     public UserDto updatePassword(Long id, String newPassword) {
         User user = getReference(id);
         if (user.getRole() == Role.ADMIN) {

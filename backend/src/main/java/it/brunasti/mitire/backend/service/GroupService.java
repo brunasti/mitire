@@ -64,6 +64,12 @@ public class GroupService {
         return toDto(groupRepository.save(group));
     }
 
+    public GroupDto removeProject(Long groupId, Long projectId) {
+        Group group = getReference(groupId);
+        group.getProjects().removeIf(project -> project.getId().equals(projectId));
+        return toDto(groupRepository.save(group));
+    }
+
     @Transactional(readOnly = true)
     public List<GroupDto> findByProject(Long projectId) {
         return groupRepository.findAll().stream()

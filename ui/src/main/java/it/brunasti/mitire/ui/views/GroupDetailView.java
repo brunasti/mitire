@@ -9,9 +9,12 @@ import it.brunasti.mitire.backend.web.dto.UpdateGroupRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -43,6 +46,9 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
     private final ComboBox<UserDto> addUser = new ComboBox<>("Add user");
     private final Grid<ProjectDto> projectsGrid = new Grid<>(ProjectDto.class, false);
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
+
+    private Grid.Column<ProjectDto> projectActionsColumn;
+    private Grid.Column<UserDto> userActionsColumn;
 
     private List<ProjectDto> allProjects;
     private List<UserDto> allUsers;
@@ -82,13 +88,8 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             return;
         }
         name.setValue(group.name());
-        currentProjectIds = group.projects().stream().map(ProjectDto::id).toList();
-        projectsGrid.setItems(group.projects());
-        addProject.setItems(allProjects.stream().filter(p -> !group.projects().contains(p)).toList());
-
-        List<UserDto> members = userService.findByGroup(groupId);
-        usersGrid.setItems(members);
-        addUser.setItems(allUsers.stream().filter(u -> members.stream().noneMatch(m -> m.id().equals(u.id()))).toList());
+        refreshProjects(group.projects());
+        refreshUsers(userService.findByGroup(groupId));
     }
 
     private FormLayout buildDetailsTab() {
@@ -106,9 +107,14 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         projectsGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
         projectsGrid.addColumn(ProjectDto::name).setHeader("Name");
         projectsGrid.addColumn(ProjectDto::active).setHeader("Active");
+        projectActionsColumn = projectsGrid.addComponentColumn(this::buildRemoveProjectButton).setHeader("").setFlexGrow(0);
         projectsGrid.setSizeFull();
         projectsGrid.getStyle().set("cursor", "pointer");
-        projectsGrid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
+        projectsGrid.addItemClickListener(e -> {
+            if (e.getColumn() != projectActionsColumn) {
+                UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id());
+            }
+        });
 
         VerticalLayout layout = new VerticalLayout(addForm, projectsGrid);
         layout.setSizeFull();
@@ -125,13 +131,68 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         usersGrid.addColumn(UserDto::email).setHeader("Email");
         usersGrid.addColumn(UserDto::role).setHeader("Role");
         usersGrid.addColumn(UserDto::enabled).setHeader("Enabled");
+        userActionsColumn = usersGrid.addComponentColumn(this::buildRemoveUserButton).setHeader("").setFlexGrow(0);
         usersGrid.setSizeFull();
         usersGrid.getStyle().set("cursor", "pointer");
-        usersGrid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));
+        usersGrid.addItemClickListener(e -> {
+            if (e.getColumn() != userActionsColumn) {
+                UI.getCurrent().navigate(UserDetailView.class, e.getItem().id());
+            }
+        });
 
         VerticalLayout layout = new VerticalLayout(addForm, usersGrid);
         layout.setSizeFull();
         return layout;
+    }
+
+    private Button buildRemoveProjectButton(ProjectDto project) {
+        Button button = new Button(VaadinIcon.TRASH.create());
+        button.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_ERROR);
+        button.setTooltipText("Remove from group");
+        button.addClickListener(e -> confirmRemoveProject(project));
+        return button;
+    }
+
+    private Button buildRemoveUserButton(UserDto user) {
+        Button button = new Button(VaadinIcon.TRASH.create());
+        button.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_ERROR);
+        button.setTooltipText("Remove from group");
+        button.addClickListener(e -> confirmRemoveUser(user));
+        return button;
+    }
+
+    private void confirmRemoveProject(ProjectDto project) {
+        ConfirmDialog dialog = new ConfirmDialog(
+                "Remove project",
+                "Remove '" + project.code() + " - " + project.name() + "' from this group?",
+                "Remove", e -> removeProject(project),
+                "Cancel", e -> { }
+        );
+        dialog.setConfirmButtonTheme("error primary");
+        dialog.open();
+    }
+
+    private void confirmRemoveUser(UserDto user) {
+        ConfirmDialog dialog = new ConfirmDialog(
+                "Remove user",
+                "Remove '" + user.username() + "' from this group?",
+                "Remove", e -> removeUser(user),
+                "Cancel", e -> { }
+        );
+        dialog.setConfirmButtonTheme("error primary");
+        dialog.open();
+    }
+
+    private void removeProject(ProjectDto project) {
+        GroupDto updated = groupService.removeProject(groupId, project.id());
+        refreshProjects(updated.projects());
+        Notification.show("Project removed from group").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+
+    private void removeUser(UserDto user) {
+        userService.removeFromGroup(user.id(), groupId);
+        refreshUsers(userService.findByGroup(groupId));
+        Notification.show("User removed from group").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
     private void addProjectLink() {
@@ -141,10 +202,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             return;
         }
         GroupDto updated = groupService.addProject(groupId, selected.id());
-        currentProjectIds = updated.projects().stream().map(ProjectDto::id).toList();
-        projectsGrid.setItems(updated.projects());
-        addProject.setItems(allProjects.stream().filter(p -> !updated.projects().contains(p)).toList());
-        addProject.clear();
+        refreshProjects(updated.projects());
         Notification.show("Project added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
@@ -155,11 +213,21 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             return;
         }
         userService.addToGroup(selected.id(), groupId);
-        List<UserDto> members = userService.findByGroup(groupId);
-        usersGrid.setItems(members);
-        addUser.setItems(allUsers.stream().filter(u -> members.stream().noneMatch(m -> m.id().equals(u.id()))).toList());
-        addUser.clear();
+        refreshUsers(userService.findByGroup(groupId));
         Notification.show("User added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+
+    private void refreshProjects(List<ProjectDto> linkedProjects) {
+        currentProjectIds = linkedProjects.stream().map(ProjectDto::id).toList();
+        projectsGrid.setItems(linkedProjects);
+        addProject.clear();
+        addProject.setItems(allProjects.stream().filter(p -> !linkedProjects.contains(p)).toList());
+    }
+
+    private void refreshUsers(List<UserDto> members) {
+        usersGrid.setItems(members);
+        addUser.clear();
+        addUser.setItems(allUsers.stream().filter(u -> members.stream().noneMatch(m -> m.id().equals(u.id()))).toList());
     }
 
     private void save() {

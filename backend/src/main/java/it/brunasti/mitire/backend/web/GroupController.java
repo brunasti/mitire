@@ -49,4 +49,10 @@ public class GroupController {
     public GroupDto addProject(@PathVariable Long id, @PathVariable Long projectId) {
         return groupService.addProject(id, projectId);
     }
+
+    @DeleteMapping("/{id}/projects/{projectId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public GroupDto removeProject(@PathVariable Long id, @PathVariable Long projectId) {
+        return groupService.removeProject(id, projectId);
+    }
 }
