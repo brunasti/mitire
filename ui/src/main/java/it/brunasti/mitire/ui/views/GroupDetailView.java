@@ -7,6 +7,7 @@ import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import it.brunasti.mitire.backend.web.dto.UpdateGroupRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -95,6 +96,8 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         usersGrid.addColumn(UserDto::role).setHeader("Role");
         usersGrid.addColumn(UserDto::enabled).setHeader("Enabled");
         usersGrid.setSizeFull();
+        usersGrid.getStyle().set("cursor", "pointer");
+        usersGrid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));
 
         VerticalLayout layout = new VerticalLayout(usersGrid);
         layout.setSizeFull();

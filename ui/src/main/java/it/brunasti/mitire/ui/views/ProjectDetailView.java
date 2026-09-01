@@ -7,6 +7,7 @@ import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -114,6 +115,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         usersGrid.addColumn(UserDto::role).setHeader("Role");
         usersGrid.addColumn(u -> u.groupName() != null ? u.groupName() : "-").setHeader("Group");
         usersGrid.setSizeFull();
+        usersGrid.getStyle().set("cursor", "pointer");
+        usersGrid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));
 
         VerticalLayout layout = new VerticalLayout(usersGrid);
         layout.setSizeFull();

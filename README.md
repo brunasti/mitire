@@ -76,14 +76,15 @@ corresponding Vaadin views.
 Clicking a project row on the Projects page opens `/projects/{id}`, a detail page with
 three tabs: **Project details** (edit name/active status), **Time Entries** (every entry
 logged against the project, across all users), and **Users** (everyone with access to
-the project — group members plus all ADMINs).
+the project — group members plus all ADMINs; clicking a row there opens that user's
+detail page).
 
 Clicking a group row on the Groups page opens `/groups/{id}`, a detail page with three
 tabs: **Group details** (rename), **Projects** (edit the group's permitted projects),
-and **Users** (members of that group). Both tabs' Save buttons update the same
-name+projects pair, since a group is one entity split across tabs purely for
-presentation. The Groups list page itself is create-only now — editing happens on the
-detail page.
+and **Users** (members of that group, likewise click-through to their detail page).
+Both tabs' Save buttons update the same name+projects pair, since a group is one entity
+split across tabs purely for presentation. The Groups list page itself is create-only
+now — editing happens on the detail page.
 
 Clicking a user row on the Users page opens `/users/{id}`, a detail page with four
 tabs: **User details** (edit profile, role, group, enabled status, and — for non-ADMIN
