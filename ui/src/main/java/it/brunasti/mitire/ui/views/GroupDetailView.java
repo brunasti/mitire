@@ -38,6 +38,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
 
     private final TextField name = new TextField("Name");
     private final MultiSelectComboBox<ProjectDto> projects = new MultiSelectComboBox<>("Accessible projects");
+    private final Grid<ProjectDto> projectsGrid = new Grid<>(ProjectDto.class, false);
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
 
     private Long groupId;
@@ -68,6 +69,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             GroupDto group = groupService.findById(groupId);
             name.setValue(group.name());
             projects.setValue(new HashSet<>(group.projects()));
+            projectsGrid.setItems(group.projects());
         } catch (NoSuchElementException ex) {
             event.rerouteToError(NotFoundException.class, "Group not found");
             return;
@@ -82,11 +84,21 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         return form;
     }
 
-    private FormLayout buildProjectsTab() {
+    private VerticalLayout buildProjectsTab() {
         Button save = new Button("Save", e -> save());
         FormLayout form = new FormLayout(projects, save);
         form.setMaxWidth("600px");
-        return form;
+
+        projectsGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        projectsGrid.addColumn(ProjectDto::name).setHeader("Name");
+        projectsGrid.addColumn(ProjectDto::active).setHeader("Active");
+        projectsGrid.setSizeFull();
+        projectsGrid.getStyle().set("cursor", "pointer");
+        projectsGrid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
+
+        VerticalLayout layout = new VerticalLayout(form, projectsGrid);
+        layout.setSizeFull();
+        return layout;
     }
 
     private VerticalLayout buildUsersTab() {
@@ -111,7 +123,8 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         }
         var projectIds = projects.getSelectedItems().stream().map(ProjectDto::id).toList();
         try {
-            groupService.update(groupId, new UpdateGroupRequest(name.getValue(), projectIds));
+            GroupDto updated = groupService.update(groupId, new UpdateGroupRequest(name.getValue(), projectIds));
+            projectsGrid.setItems(updated.projects());
             Notification.show("Group updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
             Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
