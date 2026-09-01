@@ -113,8 +113,9 @@ the start date with a `400`.
 
 Clicking a project row on the Projects page opens `/projects/{id}`, showing the
 project's name next to the "← Back to projects" link (kept live after a rename), with
-four tabs: **Project details** (edit name/active status/start date/end date), **Time Entries** (every entry
-logged against the project, across all users), **Users** (everyone with access to the
+four tabs: **Project details** (edit name/active status/start date/end date), **Time
+Entries** (every entry logged against the project, across all users; clicking a row
+opens that entry's detail page), **Users** (everyone with access to the
 project — group members plus all ADMINs; clicking a row there opens that user's detail
 page), and **Groups** (every group that grants access to this project, a picker to link
 an additional existing group, and a trashcan icon per row to unlink one — with
@@ -180,7 +181,11 @@ returns without saving; **Delete** asks for confirmation first, then deletes and
 returns to `/`. Only the entry's own owner can view/edit/delete it — ADMIN bypasses
 this, same as the rest of the access model — enforced in `TimeEntryService`, not just
 hidden in the UI, so `GET`/`PUT`/`DELETE /api/time-entries/{id}` reject a non-owner,
-non-admin caller with 403.
+non-admin caller with 403. The Project and User fields are links: Project always opens
+`/projects/{id}` (ADMIN-only, same as elsewhere — a non-admin viewing their own entry
+hits the "Access denied" page if clicked); User opens `/profile` when it's your own
+entry, or `/users/{id}` (ADMIN-only) when an admin is viewing someone else's — since
+`/profile` always shows the *caller's* own profile and can't target another user.
 
 ## My Profile
 

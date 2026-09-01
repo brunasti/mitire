@@ -130,6 +130,7 @@ public class TimeEntryService {
                 entry.getId(),
                 entry.getUser().getId(),
                 entry.getUser().getUsername(),
+                entry.getUser().getFullName(),
                 entry.getProject().getId(),
                 entry.getProject().getCode(),
                 entry.getWorkDate(),

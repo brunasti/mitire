@@ -9,6 +9,7 @@ public record TimeEntryDto(
         Long id,
         Long userId,
         String username,
+        String userFullName,
         Long projectId,
         String projectCode,
         LocalDate workDate,

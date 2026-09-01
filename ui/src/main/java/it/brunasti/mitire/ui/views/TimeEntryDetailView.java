@@ -20,6 +20,7 @@ import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.PermitAll;
@@ -36,7 +37,8 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
     private final TimeEntryService timeEntryService;
     private final Long currentUserId;
 
-    private final TextField project = new TextField("Project");
+    private final RouterLink projectLink = new RouterLink();
+    private final RouterLink userLink = new RouterLink();
     private final TextField workDate = new TextField("Date");
     private final TextField status = new TextField("Status");
     private final NumberField hours = new NumberField("Hours");
@@ -52,7 +54,6 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
                 .map(u -> u.id())
                 .orElseThrow();
 
-        project.setReadOnly(true);
         workDate.setReadOnly(true);
         status.setReadOnly(true);
         hours.setStep(0.25);
@@ -67,7 +68,14 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         this.entryId = entryId;
         try {
             TimeEntryDto entry = timeEntryService.findByIdForUser(entryId, currentUserId);
-            project.setValue(entry.projectCode());
+            projectLink.setText(entry.projectCode());
+            projectLink.setRoute(ProjectDetailView.class, entry.projectId());
+            userLink.setText(entry.userFullName());
+            if (entry.userId().equals(currentUserId)) {
+                userLink.setRoute(ProfileView.class);
+            } else {
+                userLink.setRoute(UserDetailView.class, entry.userId());
+            }
             workDate.setValue(entry.workDate().toString());
             status.setValue(entry.status().name());
             hours.setValue(entry.hours().doubleValue());
@@ -86,8 +94,11 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         Button delete = new Button("Delete", e -> confirmDelete());
         delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
 
-        FormLayout form = new FormLayout(project, workDate, status, hours, description,
-                new HorizontalLayout(save, cancel, delete));
+        FormLayout form = new FormLayout();
+        form.addFormItem(projectLink, "Project");
+        form.addFormItem(userLink, "User");
+        form.add(workDate, status, hours, description);
+        form.add(new HorizontalLayout(save, cancel, delete));
         form.setMaxWidth("600px");
         return form;
     }

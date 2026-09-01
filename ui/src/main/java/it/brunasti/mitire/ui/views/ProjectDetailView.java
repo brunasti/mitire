@@ -145,6 +145,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
         entriesGrid.addColumn(TimeEntryDto::status).setHeader("Status");
         entriesGrid.setSizeFull();
+        entriesGrid.getStyle().set("cursor", "pointer");
+        entriesGrid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));
 
         VerticalLayout layout = new VerticalLayout(entriesGrid);
         layout.setSizeFull();
