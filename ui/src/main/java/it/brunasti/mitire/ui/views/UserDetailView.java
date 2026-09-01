@@ -10,6 +10,7 @@ import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateUserRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -139,6 +140,8 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
                         .reduce((a, b) -> a + ", " + b).orElse(""))
                 .setHeader("Projects");
         groupsGrid.setSizeFull();
+        groupsGrid.getStyle().set("cursor", "pointer");
+        groupsGrid.addItemClickListener(e -> UI.getCurrent().navigate(GroupDetailView.class, e.getItem().id()));
 
         VerticalLayout layout = new VerticalLayout(groupsGrid);
         layout.setSizeFull();
@@ -150,6 +153,8 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         projectsGrid.addColumn(ProjectDto::name).setHeader("Name");
         projectsGrid.addColumn(ProjectDto::active).setHeader("Active");
         projectsGrid.setSizeFull();
+        projectsGrid.getStyle().set("cursor", "pointer");
+        projectsGrid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
 
         VerticalLayout layout = new VerticalLayout(projectsGrid);
         layout.setSizeFull();

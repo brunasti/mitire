@@ -89,10 +89,15 @@ now — editing happens on the detail page.
 Clicking a user row on the Users page opens `/users/{id}`, a detail page with four
 tabs: **User details** (edit profile, role, group, enabled status, and — for non-ADMIN
 users — reset the password), **Time recordings** (every time entry logged by that
-user, across all projects), **Groups** (the group the user belongs to, if any), and
-**Projects** (every project the user can currently access, resolved the same way as
-the access-control check itself — all projects for ADMIN, or their group's projects
-otherwise). The Users list page is likewise create-only now.
+user, across all projects), **Groups** (the group the user belongs to, if any — click
+through to its detail page), and **Projects** (every project the user can currently
+access, resolved the same way as the access-control check itself — all projects for
+ADMIN, or their group's projects otherwise; click through to a project's detail page).
+The Users list page is likewise create-only now.
+
+The three detail pages cross-link every user/group/project reference this way, in both
+directions: a project's or group's "Users" tab links to each user's page, and a user's
+"Groups"/"Projects" tabs link back to those pages.
 
 ## REST API
 
