@@ -75,6 +75,9 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
         setSizeFull();
 
+        startDate.setWidth("160px");
+        endDate.setWidth("160px");
+
         allGroups = groupService.findAll();
         addGroup.setItemLabelGenerator(GroupDto::name);
 

@@ -13,6 +13,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -40,6 +41,9 @@ public class TimeEntryService {
                     "User '" + user.getUsername() + "' does not have access to project '" + project.getCode() + "'");
         }
 
+        validateProjectDateRange(project, request.workDate());
+        validateDailyHours(user.getId(), request.workDate(), request.hours(), null);
+
         TimeEntry entry = new TimeEntry();
         entry.setUser(user);
         entry.setProject(project);
@@ -57,6 +61,7 @@ public class TimeEntryService {
 
     public TimeEntryDto update(Long id, Long requestingUserId, UpdateTimeEntryRequest request) {
         TimeEntry entry = getReferenceChecked(id, requestingUserId);
+        validateDailyHours(entry.getUser().getId(), entry.getWorkDate(), request.hours(), entry.getId());
         entry.setHours(request.hours());
         entry.setDescription(request.description());
         return toDto(timeEntryRepository.save(entry));
@@ -82,6 +87,25 @@ public class TimeEntryService {
             spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("workDate"), to));
         }
         return timeEntryRepository.findAll(spec).stream().map(this::toDto).toList();
+    }
+
+    private void validateProjectDateRange(Project project, LocalDate workDate) {
+        if (project.getStartDate() != null && workDate.isBefore(project.getStartDate())) {
+            throw new IllegalArgumentException("Work date can't be before the project's start date");
+        }
+        if (project.getEndDate() != null && workDate.isAfter(project.getEndDate())) {
+            throw new IllegalArgumentException("Work date can't be after the project's end date");
+        }
+    }
+
+    private void validateDailyHours(Long userId, LocalDate workDate, BigDecimal hours, Long excludeEntryId) {
+        BigDecimal existingTotal = timeEntryRepository.findByUserIdAndWorkDate(userId, workDate).stream()
+                .filter(entry -> excludeEntryId == null || !entry.getId().equals(excludeEntryId))
+                .map(TimeEntry::getHours)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (existingTotal.add(hours).compareTo(new BigDecimal("24")) > 0) {
+            throw new IllegalArgumentException("Total hours for " + workDate + " can't exceed 24");
+        }
     }
 
     private boolean canAccess(User user, Project project) {

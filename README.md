@@ -157,6 +157,13 @@ two tabs: **Add Time Entry** (the creation form — its Project dropdown only li
 accessible projects that are currently active) and **Time Entries** (your own entries,
 sortable by Date and Project).
 
+`TimeEntryService` enforces two rules on both creation and editing (a `400` with an
+`{"error": "..."}` body otherwise, same as the other bean-validation failures above):
+a user's total hours for a single day, across all their entries, can't exceed 24 (an
+edit is checked against the day's other entries, excluding the one being edited); and
+if the project has a start date and/or end date set, the entry's work date can't fall
+outside that range (no check is done for whichever bound, or both, is left unset).
+
 Clicking a row on the Time Entries tab (your own time entries) opens `/time-entries/{id}`
 to edit it: Hours and Description are the only editable fields (project/date/status are
 shown read-only — creating a new entry for a different project/date is a separate

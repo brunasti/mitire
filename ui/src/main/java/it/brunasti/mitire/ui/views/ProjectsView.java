@@ -48,7 +48,9 @@ public class ProjectsView extends VerticalLayout {
         TextField code = new TextField("Code");
         TextField name = new TextField("Name");
         DatePicker startDate = new DatePicker("Start date");
+        startDate.setWidth("160px");
         DatePicker endDate = new DatePicker("End date");
+        endDate.setWidth("160px");
 
         Button submit = new Button("Create", e -> {
             if (code.getValue().isBlank() || name.getValue().isBlank()) {

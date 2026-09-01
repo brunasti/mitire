@@ -16,6 +16,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -112,5 +113,90 @@ class TimeEntryServiceTest {
         CreateTimeEntryRequest request = new CreateTimeEntryRequest(1L, 2L, LocalDate.of(2026, 8, 20), new BigDecimal("2"), null);
 
         assertThatThrownBy(() -> service.create(request)).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void createRejectsWhenDailyTotalWouldExceed24Hours() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+
+        TimeEntry existing = new TimeEntry();
+        existing.setId(50L);
+        existing.setHours(new BigDecimal("20"));
+
+        when(userService.getReference(1L)).thenReturn(admin);
+        when(projectService.getReference(2L)).thenReturn(project);
+        when(timeEntryRepository.findByUserIdAndWorkDate(1L, LocalDate.of(2026, 8, 20)))
+                .thenReturn(List.of(existing));
+
+        CreateTimeEntryRequest request = new CreateTimeEntryRequest(1L, 2L, LocalDate.of(2026, 8, 20), new BigDecimal("5"), null);
+
+        assertThatThrownBy(() -> service.create(request)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void createRejectsWorkDateOutsideProjectDateRange() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+        project.setStartDate(LocalDate.of(2026, 1, 1));
+        project.setEndDate(LocalDate.of(2026, 6, 30));
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+
+        when(userService.getReference(1L)).thenReturn(admin);
+        when(projectService.getReference(2L)).thenReturn(project);
+
+        CreateTimeEntryRequest request = new CreateTimeEntryRequest(1L, 2L, LocalDate.of(2026, 8, 20), new BigDecimal("2"), null);
+
+        assertThatThrownBy(() -> service.create(request)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void updateRejectsWhenDailyTotalWouldExceed24HoursExcludingItself() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService);
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+        user.setRole(Role.ADMIN);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        TimeEntry entryBeingEdited = new TimeEntry();
+        entryBeingEdited.setId(99L);
+        entryBeingEdited.setUser(user);
+        entryBeingEdited.setProject(project);
+        entryBeingEdited.setWorkDate(LocalDate.of(2026, 8, 20));
+        entryBeingEdited.setHours(new BigDecimal("10"));
+
+        TimeEntry otherEntrySameDay = new TimeEntry();
+        otherEntrySameDay.setId(50L);
+        otherEntrySameDay.setHours(new BigDecimal("20"));
+
+        when(userService.getReference(1L)).thenReturn(user);
+        when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entryBeingEdited));
+        when(timeEntryRepository.findByUserIdAndWorkDate(1L, LocalDate.of(2026, 8, 20)))
+                .thenReturn(List.of(entryBeingEdited, otherEntrySameDay));
+
+        it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest request =
+                new it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest(new BigDecimal("5"), null);
+
+        assertThatThrownBy(() -> service.update(99L, 1L, request)).isInstanceOf(IllegalArgumentException.class);
     }
 }

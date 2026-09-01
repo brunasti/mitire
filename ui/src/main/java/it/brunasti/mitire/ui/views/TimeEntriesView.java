@@ -105,6 +105,8 @@ public class TimeEntriesView extends VerticalLayout {
                 refreshGrid();
             } catch (AccessDeniedException ex) {
                 Notification.show("You don't have access to that project").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            } catch (IllegalArgumentException ex) {
+                Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
         });
 
