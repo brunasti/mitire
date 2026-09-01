@@ -87,9 +87,9 @@ Clicking a project row on the Projects page opens `/projects/{id}`, a detail pag
 four tabs: **Project details** (edit name/active status), **Time Entries** (every entry
 logged against the project, across all users), **Users** (everyone with access to the
 project — group members plus all ADMINs; clicking a row there opens that user's detail
-page), and **Groups** (every group that grants access to this project, plus a picker
-to link an additional existing group — the reciprocal of the Projects tab on a group's
-page).
+page), and **Groups** (every group that grants access to this project, a picker to link
+an additional existing group, and a trashcan icon per row to unlink one — with
+confirmation — the reciprocal of the Projects tab on a group's page).
 
 Clicking a group row on the Groups page opens `/groups/{id}`, a detail page with three
 tabs: **Group details** (rename), **Projects** (the group's permitted projects —

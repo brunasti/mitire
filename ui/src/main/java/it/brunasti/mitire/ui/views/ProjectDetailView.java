@@ -11,10 +11,13 @@ import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -52,6 +55,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
+
+    private Grid.Column<GroupDto> groupActionsColumn;
 
     private List<GroupDto> allGroups;
     private Long projectId;
@@ -93,10 +98,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         }
         entriesGrid.setItems(timeEntryService.search(null, projectId, null, null));
         usersGrid.setItems(userService.findByProjectAccess(projectId));
-
-        List<GroupDto> linkedGroups = groupService.findByProject(projectId);
-        groupsGrid.setItems(linkedGroups);
-        addGroup.setItems(allGroups.stream().filter(g -> !linkedGroups.contains(g)).toList());
+        refreshGroups();
     }
 
     private FormLayout buildDetailsTab() {
@@ -153,9 +155,14 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         groupsGrid.addColumn(GroupDto::name).setHeader("Name").setSortable(true);
         groupsGrid.addColumn(g -> g.projects().stream().map(ProjectDto::code).collect(Collectors.joining(", ")))
                 .setHeader("Projects");
+        groupActionsColumn = groupsGrid.addComponentColumn(this::buildRemoveGroupButton).setHeader("").setFlexGrow(0);
         groupsGrid.setSizeFull();
         groupsGrid.getStyle().set("cursor", "pointer");
-        groupsGrid.addItemClickListener(e -> UI.getCurrent().navigate(GroupDetailView.class, e.getItem().id()));
+        groupsGrid.addItemClickListener(e -> {
+            if (e.getColumn() != groupActionsColumn) {
+                UI.getCurrent().navigate(GroupDetailView.class, e.getItem().id());
+            }
+        });
 
         VerticalLayout layout = new VerticalLayout(addForm, groupsGrid);
         layout.setSizeFull();
@@ -169,11 +176,41 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             return;
         }
         groupService.addProject(selected.id(), projectId);
-        List<GroupDto> linkedGroups = groupService.findByProject(projectId);
-        groupsGrid.setItems(linkedGroups);
-        addGroup.setItems(allGroups.stream().filter(g -> !linkedGroups.contains(g)).toList());
-        addGroup.clear();
+        refreshGroups();
         usersGrid.setItems(userService.findByProjectAccess(projectId));
         Notification.show("Group added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+
+    private Button buildRemoveGroupButton(GroupDto group) {
+        Button button = new Button(VaadinIcon.TRASH.create());
+        button.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_ERROR);
+        button.setTooltipText("Remove from project");
+        button.addClickListener(e -> confirmRemoveGroup(group));
+        return button;
+    }
+
+    private void confirmRemoveGroup(GroupDto group) {
+        ConfirmDialog dialog = new ConfirmDialog(
+                "Remove group",
+                "Remove '" + group.name() + "' from this project?",
+                "Remove", e -> removeGroup(group),
+                "Cancel", e -> { }
+        );
+        dialog.setConfirmButtonTheme("error primary");
+        dialog.open();
+    }
+
+    private void removeGroup(GroupDto group) {
+        groupService.removeProject(group.id(), projectId);
+        refreshGroups();
+        usersGrid.setItems(userService.findByProjectAccess(projectId));
+        Notification.show("Group removed from project").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    }
+
+    private void refreshGroups() {
+        List<GroupDto> linkedGroups = groupService.findByProject(projectId);
+        groupsGrid.setItems(linkedGroups);
+        addGroup.clear();
+        addGroup.setItems(allGroups.stream().filter(g -> !linkedGroups.contains(g)).toList());
     }
 }
