@@ -3,6 +3,7 @@ package it.brunasti.mitire.ui.views;
 import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.web.dto.CreateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -60,6 +61,8 @@ public class ProjectsView extends VerticalLayout {
         grid.addColumn(ProjectDto::active).setHeader("Active");
         grid.setWidthFull();
         grid.setHeight("400px");
+        grid.getStyle().set("cursor", "pointer");
+        grid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
         return grid;
     }
 

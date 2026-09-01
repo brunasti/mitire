@@ -3,6 +3,7 @@ package it.brunasti.mitire.backend.web;
 import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.web.dto.CreateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
+import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,17 @@ public class ProjectController {
     @GetMapping
     public List<ProjectDto> findAll() {
         return projectService.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public ProjectDto findById(@PathVariable Long id) {
+        return projectService.findById(id);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ProjectDto update(@PathVariable Long id, @Valid @RequestBody UpdateProjectRequest request) {
+        return projectService.update(id, request);
     }
 
     @PostMapping

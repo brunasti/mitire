@@ -23,8 +23,8 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserDto> findAll() {
-        return userService.findAll();
+    public List<UserDto> findAll(@RequestParam(required = false) Long projectId) {
+        return projectId != null ? userService.findByProjectAccess(projectId) : userService.findAll();
     }
 
     @PostMapping

@@ -4,6 +4,7 @@ import it.brunasti.mitire.backend.domain.Project;
 import it.brunasti.mitire.backend.repository.ProjectRepository;
 import it.brunasti.mitire.backend.web.dto.CreateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
+import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,18 @@ public class ProjectService {
         Project project = new Project();
         project.setCode(request.code());
         project.setName(request.name());
+        return toDto(projectRepository.save(project));
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectDto findById(Long id) {
+        return toDto(getReference(id));
+    }
+
+    public ProjectDto update(Long id, UpdateProjectRequest request) {
+        Project project = getReference(id);
+        project.setName(request.name());
+        project.setActive(request.active());
         return toDto(projectRepository.save(project));
     }
 

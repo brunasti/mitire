@@ -42,6 +42,22 @@ public class UserService {
                 .orElseThrow(() -> new NoSuchElementException("User '" + username + "' not found"));
     }
 
+    @Transactional(readOnly = true)
+    public List<UserDto> findByProjectAccess(Long projectId) {
+        return userRepository.findAll().stream()
+                .filter(user -> hasAccess(user, projectId))
+                .map(this::toDto)
+                .toList();
+    }
+
+    private boolean hasAccess(User user, Long projectId) {
+        if (user.getRole() == Role.ADMIN) {
+            return true;
+        }
+        Group group = user.getGroup();
+        return group != null && group.getProjects().stream().anyMatch(project -> project.getId().equals(projectId));
+    }
+
     public UserDto create(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.username())) {
             throw new IllegalArgumentException("Username '" + request.username() + "' is already taken");
