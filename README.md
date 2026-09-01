@@ -103,7 +103,8 @@ tabs: **User details** (edit profile, role, groups — a multi-select, since a u
 belong to any number of groups — enabled status, and — for non-ADMIN users — reset the
 password), **Time recordings** (every time entry logged by that user, across all
 projects), **Groups** (every group the user belongs to — click through to a group's
-detail page), and **Projects** (every project the user can currently access — the
+detail page, plus a picker to link an additional existing group without leaving the
+tab), and **Projects** (every project the user can currently access — the
 union of all their groups' projects, or everything for ADMIN; click through to a
 project's detail page). The Users list page is likewise create-only, with the same
 multi-select for initial group assignment.

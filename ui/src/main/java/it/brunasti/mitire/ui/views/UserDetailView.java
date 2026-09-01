@@ -18,6 +18,8 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -51,10 +53,12 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     private final MultiSelectComboBox<GroupDto> groups = new MultiSelectComboBox<>("Groups");
     private final Checkbox enabled = new Checkbox("Enabled");
 
+    private final ComboBox<GroupDto> addGroup = new ComboBox<>("Add group");
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
     private final Grid<ProjectDto> projectsGrid = new Grid<>(ProjectDto.class, false);
 
+    private List<GroupDto> allGroups;
     private Long userId;
     private Role currentRole;
 
@@ -66,8 +70,10 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
 
         username.setReadOnly(true);
         role.setItems(Role.values());
-        groups.setItems(groupService.findAll());
+        allGroups = groupService.findAll();
+        groups.setItems(allGroups);
         groups.setItemLabelGenerator(GroupDto::name);
+        addGroup.setItemLabelGenerator(GroupDto::name);
 
         TabSheet tabSheet = new TabSheet();
         tabSheet.add("User details", buildDetailsTab());
@@ -128,6 +134,10 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     }
 
     private VerticalLayout buildGroupsTab() {
+        Button add = new Button("Add", e -> addGroupLink());
+        HorizontalLayout addForm = new HorizontalLayout(addGroup, add);
+        addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
+
         groupsGrid.addColumn(GroupDto::name).setHeader("Name").setSortable(true);
         groupsGrid.addColumn(g -> g.projects().stream().map(ProjectDto::code)
                         .reduce((a, b) -> a + ", " + b).orElse(""))
@@ -136,9 +146,22 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         groupsGrid.getStyle().set("cursor", "pointer");
         groupsGrid.addItemClickListener(e -> UI.getCurrent().navigate(GroupDetailView.class, e.getItem().id()));
 
-        VerticalLayout layout = new VerticalLayout(groupsGrid);
+        VerticalLayout layout = new VerticalLayout(addForm, groupsGrid);
         layout.setSizeFull();
         return layout;
+    }
+
+    private void addGroupLink() {
+        GroupDto selected = addGroup.getValue();
+        if (selected == null) {
+            Notification.show("Select a group to add").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            return;
+        }
+        var updatedSelection = new HashSet<>(groups.getValue());
+        updatedSelection.add(selected);
+        groups.setValue(updatedSelection);
+        addGroup.clear();
+        save();
     }
 
     private VerticalLayout buildProjectsTab() {
@@ -178,6 +201,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
 
     private void refreshComputedTabs(UserDto user) {
         groupsGrid.setItems(user.groups());
+        addGroup.setItems(allGroups.stream().filter(g -> !user.groups().contains(g)).toList());
         projectsGrid.setItems(userService.findAccessibleProjects(userId));
     }
 
