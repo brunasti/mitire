@@ -33,7 +33,8 @@ security layer automatically detects and permits for unauthenticated requests â€
 manual security config needed) and as the logo shown to the left of the drawer toggle
 in `MainLayout`, where it's wrapped in a button that navigates to the home page (`/`)
 when clicked. The logged-in user's full name is shown to the left of the "My profile"
-icon button.
+icon button. It's also shown next to the "MiTiRe" title on the login page
+(`LoginView`), reusing the same already-anonymous-permitted `/mitire-icon.png` path.
 
 ## Requirements
 

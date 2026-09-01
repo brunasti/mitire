@@ -131,7 +131,9 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             }
         });
 
-        FormLayout form = new FormLayout(code, name, active, startDate, endDate, save);
+        HorizontalLayout startAndEndDate = new HorizontalLayout(startDate, endDate);
+
+        FormLayout form = new FormLayout(code, name, active, startAndEndDate, save);
         form.setMaxWidth("600px");
         return form;
     }

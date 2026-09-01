@@ -11,6 +11,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
@@ -72,7 +73,9 @@ public class ProjectsView extends VerticalLayout {
             }
         });
 
-        FormLayout form = new FormLayout(code, name, startDate, endDate, submit);
+        HorizontalLayout startAndEndDate = new HorizontalLayout(startDate, endDate);
+
+        FormLayout form = new FormLayout(code, name, startAndEndDate, submit);
         form.setMaxWidth("600px");
         return form;
     }
