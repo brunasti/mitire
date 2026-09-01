@@ -125,6 +125,14 @@ public class UserService {
         return toDto(userRepository.save(user));
     }
 
+    public UserDto addToGroup(Long userId, Long groupId) {
+        User user = getReference(userId);
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new NoSuchElementException("Group " + groupId + " not found"));
+        user.getGroups().add(group);
+        return toDto(userRepository.save(user));
+    }
+
     public UserDto updatePassword(Long id, String newPassword) {
         User user = getReference(id);
         if (user.getRole() == Role.ADMIN) {

@@ -157,11 +157,11 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
             Notification.show("Select a group to add").addThemeVariants(NotificationVariant.LUMO_ERROR);
             return;
         }
-        var updatedSelection = new HashSet<>(groups.getValue());
-        updatedSelection.add(selected);
-        groups.setValue(updatedSelection);
+        UserDto updated = userService.addToGroup(userId, selected.id());
+        groups.setValue(new HashSet<>(updated.groups()));
         addGroup.clear();
-        save();
+        refreshComputedTabs(updated);
+        Notification.show("Group added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
     private VerticalLayout buildProjectsTab() {

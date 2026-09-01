@@ -57,4 +57,10 @@ public class UserController {
     public UserDto updatePassword(@PathVariable Long id, @Valid @RequestBody UpdatePasswordRequest request) {
         return userService.updatePassword(id, request.password());
     }
+
+    @PutMapping("/{id}/groups/{groupId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDto addToGroup(@PathVariable Long id, @PathVariable Long groupId) {
+        return userService.addToGroup(id, groupId);
+    }
 }

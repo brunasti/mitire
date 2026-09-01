@@ -43,4 +43,10 @@ public class GroupController {
     public GroupDto update(@PathVariable Long id, @Valid @RequestBody UpdateGroupRequest request) {
         return groupService.update(id, request);
     }
+
+    @PutMapping("/{id}/projects/{projectId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public GroupDto addProject(@PathVariable Long id, @PathVariable Long projectId) {
+        return groupService.addProject(id, projectId);
+    }
 }

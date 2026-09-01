@@ -56,6 +56,14 @@ public class GroupService {
         return toDto(groupRepository.save(group));
     }
 
+    public GroupDto addProject(Long groupId, Long projectId) {
+        Group group = getReference(groupId);
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NoSuchElementException("Project " + projectId + " not found"));
+        group.getProjects().add(project);
+        return toDto(groupRepository.save(group));
+    }
+
     @Transactional(readOnly = true)
     public List<ProjectDto> findProjectsForGroup(Long groupId) {
         if (groupId == null) {
