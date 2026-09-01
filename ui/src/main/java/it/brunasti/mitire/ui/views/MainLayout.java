@@ -1,11 +1,13 @@
 package it.brunasti.mitire.ui.views;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -26,10 +28,14 @@ public class MainLayout extends AppLayout {
         H1 title = new H1("Mitire");
         title.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.MEDIUM);
 
+        Button profile = new Button(VaadinIcon.USER.create(), e -> UI.getCurrent().navigate(ProfileView.class));
+        profile.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
+        profile.setTooltipText("My profile");
+
         Button logout = new Button("Log out", e -> authenticationContext.logout());
         logout.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-        HorizontalLayout header = new HorizontalLayout(logo, new DrawerToggle(), title, logout);
+        HorizontalLayout header = new HorizontalLayout(logo, new DrawerToggle(), title, profile, logout);
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         header.setWidthFull();
         header.expand(title);

@@ -8,6 +8,7 @@ import it.brunasti.mitire.backend.repository.UserRepository;
 import it.brunasti.mitire.backend.web.dto.CreateUserRequest;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
+import it.brunasti.mitire.backend.web.dto.UpdateOwnProfileRequest;
 import it.brunasti.mitire.backend.web.dto.UpdateUserRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import org.springframework.security.access.AccessDeniedException;
@@ -52,9 +53,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserDto getByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .map(this::toDto)
-                .orElseThrow(() -> new NoSuchElementException("User '" + username + "' not found"));
+        return toDto(findByUsernameOrThrow(username));
     }
 
     @Transactional(readOnly = true)
@@ -140,6 +139,30 @@ public class UserService {
         }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         return toDto(userRepository.save(user));
+    }
+
+    public UserDto updateOwnProfile(String username, UpdateOwnProfileRequest request) {
+        User user = findByUsernameOrThrow(username);
+        if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("Email '" + request.email() + "' is already in use");
+        }
+        user.setFullName(request.fullName());
+        user.setEmail(request.email());
+        return toDto(userRepository.save(user));
+    }
+
+    public UserDto changeOwnPassword(String username, String currentPassword, String newPassword) {
+        User user = findByUsernameOrThrow(username);
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        return toDto(userRepository.save(user));
+    }
+
+    private User findByUsernameOrThrow(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementException("User '" + username + "' not found"));
     }
 
     User getReference(Long id) {

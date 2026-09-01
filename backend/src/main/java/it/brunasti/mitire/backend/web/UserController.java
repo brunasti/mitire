@@ -1,13 +1,16 @@
 package it.brunasti.mitire.backend.web;
 
 import it.brunasti.mitire.backend.service.UserService;
+import it.brunasti.mitire.backend.web.dto.ChangeOwnPasswordRequest;
 import it.brunasti.mitire.backend.web.dto.CreateUserRequest;
+import it.brunasti.mitire.backend.web.dto.UpdateOwnProfileRequest;
 import it.brunasti.mitire.backend.web.dto.UpdatePasswordRequest;
 import it.brunasti.mitire.backend.web.dto.UpdateUserRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,6 +40,21 @@ public class UserController {
     @GetMapping("/{id}")
     public UserDto findById(@PathVariable Long id) {
         return userService.findById(id);
+    }
+
+    @GetMapping("/me")
+    public UserDto getCurrentUser(Authentication authentication) {
+        return userService.getByUsername(authentication.getName());
+    }
+
+    @PutMapping("/me")
+    public UserDto updateOwnProfile(Authentication authentication, @Valid @RequestBody UpdateOwnProfileRequest request) {
+        return userService.updateOwnProfile(authentication.getName(), request);
+    }
+
+    @PutMapping("/me/password")
+    public UserDto changeOwnPassword(Authentication authentication, @Valid @RequestBody ChangeOwnPasswordRequest request) {
+        return userService.changeOwnPassword(authentication.getName(), request.currentPassword(), request.newPassword());
     }
 
     @PostMapping

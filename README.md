@@ -117,6 +117,16 @@ relationship tab that shows a link also has a picker to add another one, backed 
 same handful of `addX`-style service methods regardless of which side initiates the
 link.
 
+## My Profile
+
+The user icon button next to "Log out" (any role, not just ADMIN) opens `/profile`,
+where you can see your own username, role, groups and enabled status (all read-only —
+role and group membership are admin-managed), edit your full name/email, and change
+your own password given the current one. This is a separate, self-service path from
+the admin-only `UserService.updatePassword()` used on the Users pages — it has no
+ADMIN-target restriction, since changing *your own* password is always allowed
+regardless of role (unlike an admin resetting *someone else's*).
+
 ## REST API
 
 All endpoints require HTTP Basic auth (same users as the UI). Endpoints that create or
@@ -134,6 +144,10 @@ update projects, groups, or users require the ADMIN role.
   (a no-op, not an error, if already linked)
 - `PUT /api/users/{id}/password` (admin) — resets a non-ADMIN user's password; rejected
   with 403 if the target user is an ADMIN, even for another admin
+- `GET /api/users/me`, `PUT /api/users/me` (update own full name/email), `PUT
+  /api/users/me/password` (change own password given the current one) — any
+  authenticated user, no ADMIN role required; these act on the caller's own account
+  only, resolved from the request's authentication
 - `GET /api/time-entries?userId=&projectId=&from=&to=`, `POST /api/time-entries`
 
 ```bash
