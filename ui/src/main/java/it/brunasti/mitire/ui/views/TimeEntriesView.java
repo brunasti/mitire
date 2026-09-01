@@ -1,11 +1,14 @@
 package it.brunasti.mitire.ui.views;
 
+import it.brunasti.mitire.backend.domain.Role;
+import it.brunasti.mitire.backend.service.GroupService;
 import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -20,9 +23,11 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.PermitAll;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("Time entries | Mitire")
@@ -35,22 +40,27 @@ public class TimeEntriesView extends VerticalLayout {
     private final Grid<TimeEntryDto> grid = new Grid<>(TimeEntryDto.class, false);
 
     public TimeEntriesView(TimeEntryService timeEntryService, ProjectService projectService,
-                            UserService userService, AuthenticationContext authenticationContext) {
+                            UserService userService, GroupService groupService,
+                            AuthenticationContext authenticationContext) {
         this.timeEntryService = timeEntryService;
-        this.currentUserId = authenticationContext.getPrincipalName()
+        UserDto currentUser = authenticationContext.getPrincipalName()
                 .map(userService::getByUsername)
-                .map(u -> u.id())
                 .orElseThrow();
+        this.currentUserId = currentUser.id();
 
-        add(buildForm(projectService));
+        List<ProjectDto> accessibleProjects = currentUser.role() == Role.ADMIN
+                ? projectService.findAll()
+                : groupService.findProjectsForGroup(currentUser.groupId());
+
+        add(buildForm(accessibleProjects));
         add(buildGrid());
 
         refreshGrid();
     }
 
-    private FormLayout buildForm(ProjectService projectService) {
+    private FormLayout buildForm(List<ProjectDto> accessibleProjects) {
         ComboBox<ProjectDto> project = new ComboBox<>("Project");
-        project.setItems(projectService.findAll());
+        project.setItems(accessibleProjects);
         project.setItemLabelGenerator(p -> p.code() + " - " + p.name());
 
         DatePicker workDate = new DatePicker("Date", LocalDate.now());
@@ -67,16 +77,20 @@ public class TimeEntriesView extends VerticalLayout {
                 Notification.show("Please fill in project, date and hours").addThemeVariants(NotificationVariant.LUMO_ERROR);
                 return;
             }
-            timeEntryService.create(new CreateTimeEntryRequest(
-                    currentUserId,
-                    project.getValue().id(),
-                    workDate.getValue(),
-                    BigDecimal.valueOf(hours.getValue()),
-                    description.getValue()
-            ));
-            Notification.show("Time entry saved").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-            description.clear();
-            refreshGrid();
+            try {
+                timeEntryService.create(new CreateTimeEntryRequest(
+                        currentUserId,
+                        project.getValue().id(),
+                        workDate.getValue(),
+                        BigDecimal.valueOf(hours.getValue()),
+                        description.getValue()
+                ));
+                Notification.show("Time entry saved").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                description.clear();
+                refreshGrid();
+            } catch (AccessDeniedException ex) {
+                Notification.show("You don't have access to that project").addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
         });
 
         FormLayout form = new FormLayout(project, workDate, hours, description, submit);

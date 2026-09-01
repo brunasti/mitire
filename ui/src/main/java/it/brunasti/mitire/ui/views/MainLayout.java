@@ -11,7 +11,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.security.PermitAll;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+@PermitAll
 public class MainLayout extends AppLayout {
 
     public MainLayout(AuthenticationContext authenticationContext) {
@@ -28,10 +31,21 @@ public class MainLayout extends AppLayout {
         addToNavbar(header);
 
         VerticalLayout nav = new VerticalLayout(
-                new RouterLink("Time entries", TimeEntriesView.class),
-                new RouterLink("Projects", ProjectsView.class)
+                new RouterLink("Time entries", TimeEntriesView.class)
         );
+        if (isAdmin()) {
+            nav.add(
+                    new RouterLink("Projects", ProjectsView.class),
+                    new RouterLink("Groups", GroupsView.class),
+                    new RouterLink("Users", UsersView.class)
+            );
+        }
         nav.setPadding(true);
         addToDrawer(nav);
+    }
+
+    private boolean isAdmin() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
     }
 }

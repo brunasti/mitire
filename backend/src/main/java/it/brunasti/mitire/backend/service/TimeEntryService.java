@@ -1,12 +1,15 @@
 package it.brunasti.mitire.backend.service;
 
+import it.brunasti.mitire.backend.domain.Group;
 import it.brunasti.mitire.backend.domain.Project;
+import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
 import it.brunasti.mitire.backend.domain.User;
 import it.brunasti.mitire.backend.repository.TimeEntryRepository;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,11 @@ public class TimeEntryService {
     public TimeEntryDto create(CreateTimeEntryRequest request) {
         User user = userService.getReference(request.userId());
         Project project = projectService.getReference(request.projectId());
+
+        if (!canAccess(user, project)) {
+            throw new AccessDeniedException(
+                    "User '" + user.getUsername() + "' does not have access to project '" + project.getCode() + "'");
+        }
 
         TimeEntry entry = new TimeEntry();
         entry.setUser(user);
@@ -57,6 +65,14 @@ public class TimeEntryService {
             spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("workDate"), to));
         }
         return timeEntryRepository.findAll(spec).stream().map(this::toDto).toList();
+    }
+
+    private boolean canAccess(User user, Project project) {
+        if (user.getRole() == Role.ADMIN) {
+            return true;
+        }
+        Group group = user.getGroup();
+        return group != null && group.getProjects().contains(project);
     }
 
     private TimeEntryDto toDto(TimeEntry entry) {

@@ -5,9 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Entity
 @Table(name = "app_user")
 @Getter
@@ -38,11 +35,7 @@ public class User {
     @Column(nullable = false)
     private boolean enabled = true;
 
-    @ManyToMany
-    @JoinTable(
-            name = "project_member",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "project_id")
-    )
-    private Set<Project> projects = new HashSet<>();
+    @ManyToOne
+    @JoinColumn(name = "group_id")
+    private Group group;
 }

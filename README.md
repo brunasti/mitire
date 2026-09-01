@@ -49,20 +49,38 @@ Both modules run in a single deployable Spring Boot application (`ui`'s `bootJar
 ./gradlew :ui:bootRun
 ```
 
-Then open http://localhost:8080 and log in with the seeded admin account:
+Then open http://localhost:8080 and log in with a seeded account:
 
-- username: `admin`
-- password: `admin123`
+- `admin` / `admin123` — role ADMIN, sees every project regardless of group, and is the
+  only role that can manage projects, groups and users (menu entries for those only
+  appear for admins).
+- `member` / `member123` — role MEMBER, belongs to the seeded "Internal Team" group,
+  which grants access to the seeded `INTERNAL` project.
 
-A default project (`INTERNAL`) is also seeded on first run. Change the seeded password
-before using this anywhere but a local dev machine.
+Change the seeded passwords before using this anywhere but a local dev machine.
+
+## Access model
+
+Projects aren't assigned to users directly. Instead:
+
+- A **group** holds a set of permitted projects.
+- A **user** optionally belongs to one group and inherits its project access.
+- **ADMIN** users bypass this entirely and can access every project.
+
+This is enforced in `TimeEntryService`, not just hidden in the UI — submitting a time
+entry (via the UI or directly through the REST API) for a project outside the user's
+group throws `AccessDeniedException` (HTTP 403). Managing projects, groups, and users
+is restricted to ADMIN via `@PreAuthorize` on the REST layer and `@RolesAllowed` on the
+corresponding Vaadin views.
 
 ## REST API
 
-All endpoints require HTTP Basic auth (same users as the UI).
+All endpoints require HTTP Basic auth (same users as the UI). Endpoints that create or
+update projects, groups, or users require the ADMIN role.
 
-- `GET /api/projects`, `POST /api/projects`
-- `GET /api/users`
+- `GET /api/projects`, `POST /api/projects` (admin)
+- `GET /api/groups`, `POST /api/groups` (admin), `PUT /api/groups/{id}` (admin)
+- `GET /api/users`, `POST /api/users` (admin), `PUT /api/users/{id}` (admin)
 - `GET /api/time-entries?userId=&projectId=&from=&to=`, `POST /api/time-entries`
 
 ```bash

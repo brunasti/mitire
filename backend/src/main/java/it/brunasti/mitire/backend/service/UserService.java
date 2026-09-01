@@ -1,8 +1,13 @@
 package it.brunasti.mitire.backend.service;
 
+import it.brunasti.mitire.backend.domain.Group;
 import it.brunasti.mitire.backend.domain.User;
+import it.brunasti.mitire.backend.repository.GroupRepository;
 import it.brunasti.mitire.backend.repository.UserRepository;
+import it.brunasti.mitire.backend.web.dto.CreateUserRequest;
+import it.brunasti.mitire.backend.web.dto.UpdateUserRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,9 +19,13 @@ import java.util.NoSuchElementException;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, GroupRepository groupRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.groupRepository = groupRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional(readOnly = true)
@@ -31,12 +40,60 @@ public class UserService {
                 .orElseThrow(() -> new NoSuchElementException("User '" + username + "' not found"));
     }
 
+    public UserDto create(CreateUserRequest request) {
+        if (userRepository.existsByUsername(request.username())) {
+            throw new IllegalArgumentException("Username '" + request.username() + "' is already taken");
+        }
+        if (userRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("Email '" + request.email() + "' is already in use");
+        }
+
+        User user = new User();
+        user.setUsername(request.username());
+        user.setFullName(request.fullName());
+        user.setEmail(request.email());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setRole(request.role());
+        user.setGroup(resolveGroup(request.groupId()));
+
+        return toDto(userRepository.save(user));
+    }
+
+    public UserDto update(Long id, UpdateUserRequest request) {
+        User user = getReference(id);
+        user.setFullName(request.fullName());
+        user.setEmail(request.email());
+        user.setRole(request.role());
+        user.setEnabled(request.enabled());
+        user.setGroup(resolveGroup(request.groupId()));
+
+        return toDto(userRepository.save(user));
+    }
+
     User getReference(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("User " + id + " not found"));
     }
 
+    private Group resolveGroup(Long groupId) {
+        if (groupId == null) {
+            return null;
+        }
+        return groupRepository.findById(groupId)
+                .orElseThrow(() -> new NoSuchElementException("Group " + groupId + " not found"));
+    }
+
     private UserDto toDto(User user) {
-        return new UserDto(user.getId(), user.getUsername(), user.getFullName(), user.getEmail(), user.getRole(), user.isEnabled());
+        Group group = user.getGroup();
+        return new UserDto(
+                user.getId(),
+                user.getUsername(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole(),
+                user.isEnabled(),
+                group != null ? group.getId() : null,
+                group != null ? group.getName() : null
+        );
     }
 }

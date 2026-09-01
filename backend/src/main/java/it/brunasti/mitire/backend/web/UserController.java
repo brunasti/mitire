@@ -1,10 +1,13 @@
 package it.brunasti.mitire.backend.web;
 
 import it.brunasti.mitire.backend.service.UserService;
+import it.brunasti.mitire.backend.web.dto.CreateUserRequest;
+import it.brunasti.mitire.backend.web.dto.UpdateUserRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -21,5 +24,18 @@ public class UserController {
     @GetMapping
     public List<UserDto> findAll() {
         return userService.findAll();
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDto create(@Valid @RequestBody CreateUserRequest request) {
+        return userService.create(request);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserDto update(@PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
+        return userService.update(id, request);
     }
 }
