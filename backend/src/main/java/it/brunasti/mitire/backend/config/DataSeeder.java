@@ -62,7 +62,7 @@ public class DataSeeder implements ApplicationRunner {
                 member.setEmail("member@mitire.local");
                 member.setPasswordHash(passwordEncoder.encode("member123"));
                 member.setRole(Role.MEMBER);
-                member.setGroup(group);
+                member.setGroups(Set.of(group));
                 userRepository.save(member);
             }
         }

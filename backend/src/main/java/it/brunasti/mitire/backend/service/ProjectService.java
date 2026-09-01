@@ -53,7 +53,7 @@ public class ProjectService {
                 .orElseThrow(() -> new NoSuchElementException("Project " + id + " not found"));
     }
 
-    private ProjectDto toDto(Project project) {
+    ProjectDto toDto(Project project) {
         return new ProjectDto(project.getId(), project.getCode(), project.getName(), project.isActive());
     }
 }

@@ -6,6 +6,8 @@ import it.brunasti.mitire.backend.domain.User;
 import it.brunasti.mitire.backend.repository.GroupRepository;
 import it.brunasti.mitire.backend.repository.UserRepository;
 import it.brunasti.mitire.backend.web.dto.CreateUserRequest;
+import it.brunasti.mitire.backend.web.dto.GroupDto;
+import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import it.brunasti.mitire.backend.web.dto.UpdateUserRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import org.springframework.security.access.AccessDeniedException;
@@ -13,8 +15,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -22,11 +27,16 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final GroupService groupService;
+    private final ProjectService projectService;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, GroupRepository groupRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, GroupRepository groupRepository, GroupService groupService,
+                        ProjectService projectService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.groupService = groupService;
+        this.projectService = projectService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -55,18 +65,32 @@ public class UserService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ProjectDto> findAccessibleProjects(Long userId) {
+        User user = getReference(userId);
+        if (user.getRole() == Role.ADMIN) {
+            return projectService.findAll();
+        }
+        return user.getGroups().stream()
+                .flatMap(group -> group.getProjects().stream())
+                .distinct()
+                .map(projectService::toDto)
+                .sorted(Comparator.comparing(ProjectDto::code))
+                .toList();
+    }
+
     private boolean hasAccess(User user, Long projectId) {
         if (user.getRole() == Role.ADMIN) {
             return true;
         }
-        Group group = user.getGroup();
-        return group != null && group.getProjects().stream().anyMatch(project -> project.getId().equals(projectId));
+        return user.getGroups().stream()
+                .anyMatch(group -> group.getProjects().stream().anyMatch(project -> project.getId().equals(projectId)));
     }
 
     @Transactional(readOnly = true)
     public List<UserDto> findByGroup(Long groupId) {
         return userRepository.findAll().stream()
-                .filter(user -> user.getGroup() != null && user.getGroup().getId().equals(groupId))
+                .filter(user -> user.getGroups().stream().anyMatch(group -> group.getId().equals(groupId)))
                 .map(this::toDto)
                 .toList();
     }
@@ -85,7 +109,7 @@ public class UserService {
         user.setEmail(request.email());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(request.role());
-        user.setGroup(resolveGroup(request.groupId()));
+        user.setGroups(resolveGroups(request.groupIds()));
 
         return toDto(userRepository.save(user));
     }
@@ -96,7 +120,7 @@ public class UserService {
         user.setEmail(request.email());
         user.setRole(request.role());
         user.setEnabled(request.enabled());
-        user.setGroup(resolveGroup(request.groupId()));
+        user.setGroups(resolveGroups(request.groupIds()));
 
         return toDto(userRepository.save(user));
     }
@@ -115,16 +139,18 @@ public class UserService {
                 .orElseThrow(() -> new NoSuchElementException("User " + id + " not found"));
     }
 
-    private Group resolveGroup(Long groupId) {
-        if (groupId == null) {
-            return null;
+    private Set<Group> resolveGroups(List<Long> groupIds) {
+        if (groupIds == null || groupIds.isEmpty()) {
+            return new HashSet<>();
         }
-        return groupRepository.findById(groupId)
-                .orElseThrow(() -> new NoSuchElementException("Group " + groupId + " not found"));
+        return new HashSet<>(groupRepository.findAllById(groupIds));
     }
 
     private UserDto toDto(User user) {
-        Group group = user.getGroup();
+        List<GroupDto> groups = user.getGroups().stream()
+                .map(groupService::toDto)
+                .sorted(Comparator.comparing(GroupDto::name))
+                .toList();
         return new UserDto(
                 user.getId(),
                 user.getUsername(),
@@ -132,8 +158,7 @@ public class UserService {
                 user.getEmail(),
                 user.getRole(),
                 user.isEnabled(),
-                group != null ? group.getId() : null,
-                group != null ? group.getName() : null
+                groups
         );
     }
 }

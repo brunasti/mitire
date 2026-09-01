@@ -2,6 +2,8 @@ package it.brunasti.mitire.backend.web.dto;
 
 import it.brunasti.mitire.backend.domain.Role;
 
+import java.util.List;
+
 public record UserDto(
         Long id,
         String username,
@@ -9,7 +11,6 @@ public record UserDto(
         String email,
         Role role,
         boolean enabled,
-        Long groupId,
-        String groupName
+        List<GroupDto> groups
 ) {
 }

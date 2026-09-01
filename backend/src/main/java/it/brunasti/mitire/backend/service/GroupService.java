@@ -79,7 +79,7 @@ public class GroupService {
         return new HashSet<>(projectRepository.findAllById(projectIds));
     }
 
-    private GroupDto toDto(Group group) {
+    GroupDto toDto(Group group) {
         List<ProjectDto> projects = group.getProjects().stream()
                 .map(this::toProjectDto)
                 .sorted(Comparator.comparing(ProjectDto::code))

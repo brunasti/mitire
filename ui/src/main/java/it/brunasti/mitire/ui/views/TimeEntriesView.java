@@ -1,8 +1,5 @@
 package it.brunasti.mitire.ui.views;
 
-import it.brunasti.mitire.backend.domain.Role;
-import it.brunasti.mitire.backend.service.GroupService;
-import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
@@ -39,8 +36,7 @@ public class TimeEntriesView extends VerticalLayout {
 
     private final Grid<TimeEntryDto> grid = new Grid<>(TimeEntryDto.class, false);
 
-    public TimeEntriesView(TimeEntryService timeEntryService, ProjectService projectService,
-                            UserService userService, GroupService groupService,
+    public TimeEntriesView(TimeEntryService timeEntryService, UserService userService,
                             AuthenticationContext authenticationContext) {
         this.timeEntryService = timeEntryService;
         UserDto currentUser = authenticationContext.getPrincipalName()
@@ -48,9 +44,7 @@ public class TimeEntriesView extends VerticalLayout {
                 .orElseThrow();
         this.currentUserId = currentUser.id();
 
-        List<ProjectDto> accessibleProjects = currentUser.role() == Role.ADMIN
-                ? projectService.findAll()
-                : groupService.findProjectsForGroup(currentUser.groupId());
+        List<ProjectDto> accessibleProjects = userService.findAccessibleProjects(currentUserId);
 
         add(buildForm(accessibleProjects));
         add(buildGrid());

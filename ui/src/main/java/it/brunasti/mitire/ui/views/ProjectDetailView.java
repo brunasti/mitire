@@ -3,6 +3,7 @@ package it.brunasti.mitire.ui.views;
 import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
+import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
@@ -113,7 +114,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         usersGrid.addColumn(UserDto::fullName).setHeader("Full name");
         usersGrid.addColumn(UserDto::email).setHeader("Email");
         usersGrid.addColumn(UserDto::role).setHeader("Role");
-        usersGrid.addColumn(u -> u.groupName() != null ? u.groupName() : "-").setHeader("Group");
+        usersGrid.addColumn(u -> u.groups().stream().map(GroupDto::name).reduce((a, b) -> a + ", " + b).orElse("-"))
+                .setHeader("Groups");
         usersGrid.setSizeFull();
         usersGrid.getStyle().set("cursor", "pointer");
         usersGrid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));

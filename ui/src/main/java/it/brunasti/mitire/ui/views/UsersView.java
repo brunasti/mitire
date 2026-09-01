@@ -10,6 +10,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
@@ -45,10 +46,9 @@ public class UsersView extends VerticalLayout {
         PasswordField password = new PasswordField("Password");
         ComboBox<Role> role = new ComboBox<>("Role");
         role.setItems(Role.values());
-        ComboBox<GroupDto> group = new ComboBox<>("Group");
-        group.setItems(groupService.findAll());
-        group.setItemLabelGenerator(GroupDto::name);
-        group.setClearButtonVisible(true);
+        MultiSelectComboBox<GroupDto> groups = new MultiSelectComboBox<>("Groups");
+        groups.setItems(groupService.findAll());
+        groups.setItemLabelGenerator(GroupDto::name);
 
         Button submit = new Button("Create", e -> {
             if (username.getValue().isBlank() || fullName.getValue().isBlank()
@@ -58,23 +58,23 @@ public class UsersView extends VerticalLayout {
                 return;
             }
             try {
-                Long groupId = group.getValue() != null ? group.getValue().id() : null;
+                var groupIds = groups.getSelectedItems().stream().map(GroupDto::id).toList();
                 userService.create(new CreateUserRequest(username.getValue(), fullName.getValue(), email.getValue(),
-                        password.getValue(), role.getValue(), groupId));
+                        password.getValue(), role.getValue(), groupIds));
                 Notification.show("User created").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 username.clear();
                 fullName.clear();
                 email.clear();
                 password.clear();
                 role.clear();
-                group.clear();
+                groups.clear();
                 refreshGrid();
             } catch (IllegalArgumentException ex) {
                 Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
         });
 
-        return new FormLayout(username, fullName, email, password, role, group, submit);
+        return new FormLayout(username, fullName, email, password, role, groups, submit);
     }
 
     private Grid<UserDto> buildGrid() {
@@ -82,7 +82,8 @@ public class UsersView extends VerticalLayout {
         grid.addColumn(UserDto::fullName).setHeader("Full name");
         grid.addColumn(UserDto::email).setHeader("Email");
         grid.addColumn(UserDto::role).setHeader("Role");
-        grid.addColumn(u -> u.groupName() != null ? u.groupName() : "-").setHeader("Group");
+        grid.addColumn(u -> u.groups().stream().map(GroupDto::name).reduce((a, b) -> a + ", " + b).orElse("-"))
+                .setHeader("Groups");
         grid.addColumn(UserDto::enabled).setHeader("Enabled");
         grid.setWidthFull();
         grid.setHeight("400px");

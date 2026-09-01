@@ -2,7 +2,6 @@ package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.service.GroupService;
-import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
@@ -14,6 +13,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.notification.Notification;
@@ -31,6 +31,7 @@ import com.vaadin.flow.router.RouterLink;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -40,8 +41,6 @@ import java.util.NoSuchElementException;
 public class UserDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 
     private final UserService userService;
-    private final GroupService groupService;
-    private final ProjectService projectService;
     private final TimeEntryService timeEntryService;
 
     private final TextField username = new TextField("Username");
@@ -49,32 +48,26 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     private final TextField email = new TextField("Email");
     private final PasswordField password = new PasswordField("Password");
     private final ComboBox<Role> role = new ComboBox<>("Role");
-    private final ComboBox<GroupDto> group = new ComboBox<>("Group");
+    private final MultiSelectComboBox<GroupDto> groups = new MultiSelectComboBox<>("Groups");
     private final Checkbox enabled = new Checkbox("Enabled");
 
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
     private final Grid<ProjectDto> projectsGrid = new Grid<>(ProjectDto.class, false);
 
-    private List<GroupDto> groups;
     private Long userId;
     private Role currentRole;
 
-    public UserDetailView(UserService userService, GroupService groupService,
-                           ProjectService projectService, TimeEntryService timeEntryService) {
+    public UserDetailView(UserService userService, GroupService groupService, TimeEntryService timeEntryService) {
         this.userService = userService;
-        this.groupService = groupService;
-        this.projectService = projectService;
         this.timeEntryService = timeEntryService;
 
         setSizeFull();
 
         username.setReadOnly(true);
         role.setItems(Role.values());
-        groups = groupService.findAll();
-        group.setItems(groups);
-        group.setItemLabelGenerator(GroupDto::name);
-        group.setClearButtonVisible(true);
+        groups.setItems(groupService.findAll());
+        groups.setItemLabelGenerator(GroupDto::name);
 
         TabSheet tabSheet = new TabSheet();
         tabSheet.add("User details", buildDetailsTab());
@@ -105,7 +98,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         password.clear();
         updatePasswordFieldState();
         role.setValue(user.role());
-        group.setValue(findGroup(user.groupId()));
+        groups.setValue(new HashSet<>(user.groups()));
         enabled.setValue(user.enabled());
 
         entriesGrid.setItems(timeEntryService.search(userId, null, null, null));
@@ -116,7 +109,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         password.setHelperText("Leave blank to keep the current password.");
 
         Button save = new Button("Save", e -> save());
-        FormLayout form = new FormLayout(username, fullName, email, password, role, group, enabled, save);
+        FormLayout form = new FormLayout(username, fullName, email, password, role, groups, enabled, save);
         form.setMaxWidth("600px");
         return form;
     }
@@ -166,13 +159,13 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
             Notification.show("Full name, email and role are required").addThemeVariants(NotificationVariant.LUMO_ERROR);
             return;
         }
-        Long groupId = group.getValue() != null ? group.getValue().id() : null;
+        var groupIds = groups.getSelectedItems().stream().map(GroupDto::id).toList();
         try {
             if (!password.getValue().isBlank() && currentRole != Role.ADMIN) {
                 userService.updatePassword(userId, password.getValue());
             }
             UserDto updated = userService.update(userId, new UpdateUserRequest(fullName.getValue(), email.getValue(),
-                    role.getValue(), groupId, enabled.getValue()));
+                    role.getValue(), groupIds, enabled.getValue()));
             password.clear();
             currentRole = updated.role();
             updatePasswordFieldState();
@@ -184,13 +177,8 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     }
 
     private void refreshComputedTabs(UserDto user) {
-        GroupDto currentGroup = findGroup(user.groupId());
-        groupsGrid.setItems(currentGroup != null ? List.of(currentGroup) : List.of());
-
-        List<ProjectDto> accessibleProjects = user.role() == Role.ADMIN
-                ? projectService.findAll()
-                : groupService.findProjectsForGroup(user.groupId());
-        projectsGrid.setItems(accessibleProjects);
+        groupsGrid.setItems(user.groups());
+        projectsGrid.setItems(userService.findAccessibleProjects(userId));
     }
 
     private void updatePasswordFieldState() {
@@ -198,9 +186,5 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         password.setHelperText(currentRole == Role.ADMIN
                 ? "An ADMIN user's password can't be changed here."
                 : "Leave blank to keep the current password.");
-    }
-
-    private GroupDto findGroup(Long groupId) {
-        return groupId == null ? null : groups.stream().filter(g -> g.id().equals(groupId)).findFirst().orElse(null);
     }
 }

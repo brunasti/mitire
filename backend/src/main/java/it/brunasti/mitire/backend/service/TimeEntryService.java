@@ -1,6 +1,5 @@
 package it.brunasti.mitire.backend.service;
 
-import it.brunasti.mitire.backend.domain.Group;
 import it.brunasti.mitire.backend.domain.Project;
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
@@ -71,8 +70,7 @@ public class TimeEntryService {
         if (user.getRole() == Role.ADMIN) {
             return true;
         }
-        Group group = user.getGroup();
-        return group != null && group.getProjects().contains(project);
+        return user.getGroups().stream().anyMatch(group -> group.getProjects().contains(project));
     }
 
     private TimeEntryDto toDto(TimeEntry entry) {

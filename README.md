@@ -64,13 +64,16 @@ Change the seeded passwords before using this anywhere but a local dev machine.
 Projects aren't assigned to users directly. Instead:
 
 - A **group** holds a set of permitted projects.
-- A **user** optionally belongs to one group and inherits its project access.
+- A **user** can belong to any number of groups (many-to-many) and inherits the union
+  of all their groups' project access.
 - **ADMIN** users bypass this entirely and can access every project.
 
 This is enforced in `TimeEntryService`, not just hidden in the UI — submitting a time
-entry (via the UI or directly through the REST API) for a project outside the user's
-group throws `AccessDeniedException` (HTTP 403). Managing projects, groups, and users
-is restricted to ADMIN via `@PreAuthorize` on the REST layer and `@RolesAllowed` on the
+entry (via the UI or directly through the REST API) for a project outside all of the
+user's groups throws `AccessDeniedException` (HTTP 403). `UserService.findAccessibleProjects()`
+computes the same union-of-groups policy (or "everything" for ADMIN) for every
+"accessible projects" list shown in the UI. Managing projects, groups, and users is
+restricted to ADMIN via `@PreAuthorize` on the REST layer and `@RolesAllowed` on the
 corresponding Vaadin views.
 
 Clicking a project row on the Projects page opens `/projects/{id}`, a detail page with
@@ -89,13 +92,14 @@ them unchanged. The Groups list page itself is create-only — editing (the name
 on the detail page.
 
 Clicking a user row on the Users page opens `/users/{id}`, a detail page with four
-tabs: **User details** (edit profile, role, group, enabled status, and — for non-ADMIN
-users — reset the password), **Time recordings** (every time entry logged by that
-user, across all projects), **Groups** (the group the user belongs to, if any — click
-through to its detail page), and **Projects** (every project the user can currently
-access, resolved the same way as the access-control check itself — all projects for
-ADMIN, or their group's projects otherwise; click through to a project's detail page).
-The Users list page is likewise create-only now.
+tabs: **User details** (edit profile, role, groups — a multi-select, since a user can
+belong to any number of groups — enabled status, and — for non-ADMIN users — reset the
+password), **Time recordings** (every time entry logged by that user, across all
+projects), **Groups** (every group the user belongs to — click through to a group's
+detail page), and **Projects** (every project the user can currently access — the
+union of all their groups' projects, or everything for ADMIN; click through to a
+project's detail page). The Users list page is likewise create-only, with the same
+multi-select for initial group assignment.
 
 The three detail pages cross-link every user/group/project reference this way, in both
 directions: a project's or group's "Users" tab links to each user's page, and a user's

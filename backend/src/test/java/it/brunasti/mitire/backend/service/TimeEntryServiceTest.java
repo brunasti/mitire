@@ -51,7 +51,7 @@ class TimeEntryServiceTest {
         user.setId(1L);
         user.setUsername("alice");
         user.setRole(Role.MEMBER);
-        user.setGroup(group);
+        user.setGroups(Set.of(group));
 
         when(userService.getReference(1L)).thenReturn(user);
         when(projectService.getReference(2L)).thenReturn(project);
@@ -105,7 +105,6 @@ class TimeEntryServiceTest {
         user.setId(1L);
         user.setUsername("bob");
         user.setRole(Role.MEMBER);
-        user.setGroup(null);
 
         when(userService.getReference(1L)).thenReturn(user);
         when(projectService.getReference(2L)).thenReturn(project);
