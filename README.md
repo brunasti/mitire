@@ -85,6 +85,14 @@ name+projects pair, since a group is one entity split across tabs purely for
 presentation. The Groups list page itself is create-only now — editing happens on the
 detail page.
 
+Clicking a user row on the Users page opens `/users/{id}`, a detail page with four
+tabs: **User details** (edit profile, role, group, enabled status, and — for non-ADMIN
+users — reset the password), **Time recordings** (every time entry logged by that
+user, across all projects), **Groups** (the group the user belongs to, if any), and
+**Projects** (every project the user can currently access, resolved the same way as
+the access-control check itself — all projects for ADMIN, or their group's projects
+otherwise). The Users list page is likewise create-only now.
+
 ## REST API
 
 All endpoints require HTTP Basic auth (same users as the UI). Endpoints that create or
@@ -93,7 +101,8 @@ update projects, groups, or users require the ADMIN role.
 - `GET /api/projects`, `GET /api/projects/{id}`, `POST /api/projects` (admin), `PUT /api/projects/{id}` (admin)
 - `GET /api/groups`, `GET /api/groups/{id}`, `POST /api/groups` (admin), `PUT /api/groups/{id}` (admin)
 - `GET /api/users` (optionally `?projectId=` for users with access to a project, or
-  `?groupId=` for members of a group), `POST /api/users` (admin), `PUT /api/users/{id}` (admin)
+  `?groupId=` for members of a group), `GET /api/users/{id}`, `POST /api/users`
+  (admin), `PUT /api/users/{id}` (admin)
 - `PUT /api/users/{id}/password` (admin) — resets a non-ADMIN user's password; rejected
   with 403 if the target user is an ADMIN, even for another admin
 - `GET /api/time-entries?userId=&projectId=&from=&to=`, `POST /api/time-entries`

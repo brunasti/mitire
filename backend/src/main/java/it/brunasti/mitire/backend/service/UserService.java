@@ -36,6 +36,11 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    public UserDto findById(Long id) {
+        return toDto(getReference(id));
+    }
+
+    @Transactional(readOnly = true)
     public UserDto getByUsername(String username) {
         return userRepository.findByUsername(username)
                 .map(this::toDto)
