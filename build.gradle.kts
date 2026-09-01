@@ -9,7 +9,7 @@ plugins {
 }
 
 allprojects {
-    group = "com.mitire"
+    group = "it.brunasti.mitire"
     version = "0.1.0-SNAPSHOT"
 
     repositories {

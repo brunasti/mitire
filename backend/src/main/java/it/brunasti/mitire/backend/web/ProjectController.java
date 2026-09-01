@@ -1,0 +1,33 @@
+package it.brunasti.mitire.backend.web;
+
+import it.brunasti.mitire.backend.service.ProjectService;
+import it.brunasti.mitire.backend.web.dto.CreateProjectRequest;
+import it.brunasti.mitire.backend.web.dto.ProjectDto;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/projects")
+public class ProjectController {
+
+    private final ProjectService projectService;
+
+    public ProjectController(ProjectService projectService) {
+        this.projectService = projectService;
+    }
+
+    @GetMapping
+    public List<ProjectDto> findAll() {
+        return projectService.findAll();
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProjectDto create(@Valid @RequestBody CreateProjectRequest request) {
+        return projectService.create(request);
+    }
+}

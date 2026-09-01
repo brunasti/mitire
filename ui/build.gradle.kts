@@ -16,5 +16,5 @@ dependencies {
 }
 
 springBoot {
-    mainClass.set("com.mitire.Application")
+    mainClass.set("it.brunasti.mitire.Application")
 }
