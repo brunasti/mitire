@@ -113,7 +113,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
         Button save = new Button("Save", e -> {
             try {
-                projectService.update(projectId, new UpdateProjectRequest(name.getValue(), active.getValue()));
+                ProjectDto updated = projectService.update(projectId, new UpdateProjectRequest(name.getValue(), active.getValue()));
+                projectNameLabel.setText(updated.name());
                 Notification.show("Project updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (IllegalArgumentException ex) {
                 Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);

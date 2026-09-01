@@ -14,6 +14,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -42,6 +43,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
     private final UserService userService;
 
     private final TextField name = new TextField("Name");
+    private final Span groupNameLabel = new Span();
     private final ComboBox<ProjectDto> addProject = new ComboBox<>("Add project");
     private final ComboBox<UserDto> addUser = new ComboBox<>("Add user");
     private final Grid<ProjectDto> projectsGrid = new Grid<>(ProjectDto.class, false);
@@ -73,7 +75,11 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         tabSheet.add("Users", buildUsersTab());
         tabSheet.setSizeFull();
 
-        add(new RouterLink("← Back to groups", GroupsView.class), tabSheet);
+        groupNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
+        HorizontalLayout header = new HorizontalLayout(new RouterLink("← Back to groups", GroupsView.class), groupNameLabel);
+        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+
+        add(header, tabSheet);
         setFlexGrow(1, tabSheet);
     }
 
@@ -88,6 +94,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             return;
         }
         name.setValue(group.name());
+        groupNameLabel.setText(group.name());
         refreshProjects(group.projects());
         refreshUsers(userService.findByGroup(groupId));
     }
@@ -236,7 +243,8 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             return;
         }
         try {
-            groupService.update(groupId, new UpdateGroupRequest(name.getValue(), currentProjectIds));
+            GroupDto updated = groupService.update(groupId, new UpdateGroupRequest(name.getValue(), currentProjectIds));
+            groupNameLabel.setText(updated.name());
             Notification.show("Group updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
             Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
