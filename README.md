@@ -94,12 +94,18 @@ restricted to ADMIN via `@PreAuthorize` on the REST layer and `@RolesAllowed` on
 corresponding Vaadin views.
 
 The Projects page (`/projects`) shows a "Projects" heading and splits its content into
-two tabs: **Projects** (the sortable list — Code, Name and Active columns can all be
-sorted) and **Add Project** (the creation form).
+two tabs: **Projects** (the sortable list — Code, Name, Active, Start date and End date
+columns can all be sorted) and **Add Project** (the creation form, which also takes an
+optional start date and end date).
+
+A project's start and end dates are both optional and otherwise unenforced (a project
+stays usable for time entries regardless of today's date relative to them) — they're
+informational only, aside from one check: `ProjectService` rejects an end date before
+the start date with a `400`.
 
 Clicking a project row on the Projects page opens `/projects/{id}`, showing the
 project's name next to the "← Back to projects" link (kept live after a rename), with
-four tabs: **Project details** (edit name/active status), **Time Entries** (every entry
+four tabs: **Project details** (edit name/active status/start date/end date), **Time Entries** (every entry
 logged against the project, across all users), **Users** (everyone with access to the
 project — group members plus all ADMINs; clicking a row there opens that user's detail
 page), and **Groups** (every group that grants access to this project, a picker to link
@@ -147,8 +153,9 @@ link.
 ## Time entries
 
 The home page (`/`) shows a "Time Report System" heading and splits its content into
-two tabs: **Add Time Entry** (the creation form) and **Time Entries** (your own
-entries, sortable by Date and Project).
+two tabs: **Add Time Entry** (the creation form — its Project dropdown only lists your
+accessible projects that are currently active) and **Time Entries** (your own entries,
+sortable by Date and Project).
 
 Clicking a row on the Time Entries tab (your own time entries) opens `/time-entries/{id}`
 to edit it: Hours and Description are the only editable fields (project/date/status are

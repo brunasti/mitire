@@ -5,6 +5,7 @@ import it.brunasti.mitire.backend.web.dto.CreateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
@@ -46,6 +47,8 @@ public class ProjectsView extends VerticalLayout {
     private FormLayout buildForm() {
         TextField code = new TextField("Code");
         TextField name = new TextField("Name");
+        DatePicker startDate = new DatePicker("Start date");
+        DatePicker endDate = new DatePicker("End date");
 
         Button submit = new Button("Create", e -> {
             if (code.getValue().isBlank() || name.getValue().isBlank()) {
@@ -53,17 +56,20 @@ public class ProjectsView extends VerticalLayout {
                 return;
             }
             try {
-                projectService.create(new CreateProjectRequest(code.getValue(), name.getValue()));
+                projectService.create(new CreateProjectRequest(code.getValue(), name.getValue(),
+                        startDate.getValue(), endDate.getValue()));
                 Notification.show("Project created").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
                 code.clear();
                 name.clear();
+                startDate.clear();
+                endDate.clear();
                 refreshGrid();
             } catch (IllegalArgumentException ex) {
                 Notification.show(ex.getMessage()).addThemeVariants(NotificationVariant.LUMO_ERROR);
             }
         });
 
-        FormLayout form = new FormLayout(code, name, submit);
+        FormLayout form = new FormLayout(code, name, startDate, endDate, submit);
         form.setMaxWidth("600px");
         return form;
     }
@@ -72,6 +78,8 @@ public class ProjectsView extends VerticalLayout {
         grid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
         grid.addColumn(ProjectDto::name).setHeader("Name").setSortable(true);
         grid.addColumn(ProjectDto::active).setHeader("Active").setSortable(true);
+        grid.addColumn(ProjectDto::startDate).setHeader("Start date").setSortable(true);
+        grid.addColumn(ProjectDto::endDate).setHeader("End date").setSortable(true);
         grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));

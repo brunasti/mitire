@@ -8,6 +8,7 @@ import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -30,9 +31,12 @@ public class ProjectService {
         if (projectRepository.existsByCode(request.code())) {
             throw new IllegalArgumentException("A project with code '" + request.code() + "' already exists");
         }
+        validateDateRange(request.startDate(), request.endDate());
         Project project = new Project();
         project.setCode(request.code());
         project.setName(request.name());
+        project.setStartDate(request.startDate());
+        project.setEndDate(request.endDate());
         return toDto(projectRepository.save(project));
     }
 
@@ -42,9 +46,12 @@ public class ProjectService {
     }
 
     public ProjectDto update(Long id, UpdateProjectRequest request) {
+        validateDateRange(request.startDate(), request.endDate());
         Project project = getReference(id);
         project.setName(request.name());
         project.setActive(request.active());
+        project.setStartDate(request.startDate());
+        project.setEndDate(request.endDate());
         return toDto(projectRepository.save(project));
     }
 
@@ -54,6 +61,13 @@ public class ProjectService {
     }
 
     ProjectDto toDto(Project project) {
-        return new ProjectDto(project.getId(), project.getCode(), project.getName(), project.isActive());
+        return new ProjectDto(project.getId(), project.getCode(), project.getName(), project.isActive(),
+                project.getStartDate(), project.getEndDate());
+    }
+
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("End date can't be before start date");
+        }
     }
 }

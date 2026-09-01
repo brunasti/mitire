@@ -110,6 +110,7 @@ public class GroupService {
     }
 
     private ProjectDto toProjectDto(Project project) {
-        return new ProjectDto(project.getId(), project.getCode(), project.getName(), project.isActive());
+        return new ProjectDto(project.getId(), project.getCode(), project.getName(), project.isActive(),
+                project.getStartDate(), project.getEndDate());
     }
 }

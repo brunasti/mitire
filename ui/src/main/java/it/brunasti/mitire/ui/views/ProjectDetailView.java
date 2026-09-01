@@ -15,6 +15,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
@@ -51,6 +52,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final TextField code = new TextField("Code");
     private final TextField name = new TextField("Name");
     private final Checkbox active = new Checkbox("Active");
+    private final DatePicker startDate = new DatePicker("Start date");
+    private final DatePicker endDate = new DatePicker("End date");
     private final ComboBox<GroupDto> addGroup = new ComboBox<>("Add group");
     private final Span projectNameLabel = new Span();
 
@@ -98,6 +101,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             code.setValue(project.code());
             name.setValue(project.name());
             active.setValue(project.active());
+            startDate.setValue(project.startDate());
+            endDate.setValue(project.endDate());
             projectNameLabel.setText(project.name());
         } catch (NoSuchElementException ex) {
             event.rerouteToError(NotFoundException.class, "Project not found");
@@ -113,7 +118,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
         Button save = new Button("Save", e -> {
             try {
-                ProjectDto updated = projectService.update(projectId, new UpdateProjectRequest(name.getValue(), active.getValue()));
+                ProjectDto updated = projectService.update(projectId, new UpdateProjectRequest(
+                        name.getValue(), active.getValue(), startDate.getValue(), endDate.getValue()));
                 projectNameLabel.setText(updated.name());
                 Notification.show("Project updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (IllegalArgumentException ex) {
@@ -121,7 +127,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             }
         });
 
-        FormLayout form = new FormLayout(code, name, active, save);
+        FormLayout form = new FormLayout(code, name, active, startDate, endDate, save);
         form.setMaxWidth("600px");
         return form;
     }

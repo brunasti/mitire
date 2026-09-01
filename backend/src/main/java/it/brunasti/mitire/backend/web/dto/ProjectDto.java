@@ -1,4 +1,6 @@
 package it.brunasti.mitire.backend.web.dto;
 
-public record ProjectDto(Long id, String code, String name, boolean active) {
+import java.time.LocalDate;
+
+public record ProjectDto(Long id, String code, String name, boolean active, LocalDate startDate, LocalDate endDate) {
 }

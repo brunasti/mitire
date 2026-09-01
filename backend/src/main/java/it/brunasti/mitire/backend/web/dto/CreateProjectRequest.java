@@ -2,5 +2,8 @@ package it.brunasti.mitire.backend.web.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record CreateProjectRequest(@NotBlank String code, @NotBlank String name) {
+import java.time.LocalDate;
+
+public record CreateProjectRequest(@NotBlank String code, @NotBlank String name,
+                                    LocalDate startDate, LocalDate endDate) {
 }

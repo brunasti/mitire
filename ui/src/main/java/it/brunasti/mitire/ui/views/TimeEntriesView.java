@@ -48,7 +48,9 @@ public class TimeEntriesView extends VerticalLayout {
                 .orElseThrow();
         this.currentUserId = currentUser.id();
 
-        List<ProjectDto> accessibleProjects = userService.findAccessibleProjects(currentUserId);
+        List<ProjectDto> accessibleProjects = userService.findAccessibleProjects(currentUserId).stream()
+                .filter(ProjectDto::active)
+                .toList();
 
         setSizeFull();
 
