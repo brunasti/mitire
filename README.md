@@ -16,12 +16,36 @@ Both modules run in a single deployable Spring Boot application (`ui`'s `bootJar
 - Java 21 (a `gradle/gradle-daemon-jvm.properties` file pins the Gradle daemon to 21 and
   will auto-provision it via the Foojay resolver if you don't have one — this overrides
   any `org.gradle.java.home` set in your global `~/.gradle/gradle.properties`)
-- Docker (for local Postgres)
+- A local PostgreSQL instance running on `localhost:5432`, with a `mitire` role/database:
+
+  ```sql
+  CREATE ROLE mitire WITH LOGIN PASSWORD 'mitire';
+  CREATE DATABASE mitire OWNER mitire;
+  ```
+
+  (Only needs to be done once. Flyway creates the schema on first run.)
+
+  **If you're on Postgres.app (macOS):** its default `pg_hba.conf` uses `trust` auth for
+  all local TCP connections, but Postgres.app itself blocks passwordless connections from
+  processes it can't identify (a JVM launched via Gradle is typically one of these) —
+  see [postgresapp.com/l/app-permissions](https://postgresapp.com/l/app-permissions/).
+  No permission dialog appears for unidentified processes; Postgres.app's own docs
+  recommend password auth as the fix. Add this above the catch-all `trust` lines in
+  Postgres.app's `pg_hba.conf` (Postgres menu → path shown under "Server Settings",
+  typically `~/Library/Application Support/Postgres/var-<version>/pg_hba.conf`), then
+  reload with `psql -c "SELECT pg_reload_conf();"` (no restart needed):
+
+  ```
+  host    mitire          mitire          127.0.0.1/32            scram-sha-256
+  host    mitire          mitire          ::1/128                 scram-sha-256
+  ```
+
+  This only affects connections to the `mitire` database as the `mitire` role — every
+  other database/role on the instance keeps using its existing rules.
 
 ## Running locally
 
 ```bash
-docker compose up -d       # Postgres on localhost:5433 (5432 is often taken by a local Postgres.app)
 ./gradlew :ui:bootRun
 ```
 

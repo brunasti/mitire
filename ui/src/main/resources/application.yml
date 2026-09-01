@@ -5,7 +5,7 @@ spring:
   application:
     name: mitire
   datasource:
-    url: jdbc:postgresql://localhost:5433/mitire
+    url: jdbc:postgresql://localhost:5432/mitire
     username: mitire
     password: mitire
   jpa:
