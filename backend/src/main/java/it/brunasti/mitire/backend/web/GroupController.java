@@ -26,6 +26,11 @@ public class GroupController {
         return groupService.findAll();
     }
 
+    @GetMapping("/{id}")
+    public GroupDto findById(@PathVariable Long id) {
+        return groupService.findById(id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")

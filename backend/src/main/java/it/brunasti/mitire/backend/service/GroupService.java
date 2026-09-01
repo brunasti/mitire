@@ -44,6 +44,11 @@ public class GroupService {
         return toDto(groupRepository.save(group));
     }
 
+    @Transactional(readOnly = true)
+    public GroupDto findById(Long id) {
+        return toDto(getReference(id));
+    }
+
     public GroupDto update(Long id, UpdateGroupRequest request) {
         Group group = getReference(id);
         group.setName(request.name());

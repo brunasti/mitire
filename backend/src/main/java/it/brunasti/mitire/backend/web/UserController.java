@@ -23,8 +23,15 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserDto> findAll(@RequestParam(required = false) Long projectId) {
-        return projectId != null ? userService.findByProjectAccess(projectId) : userService.findAll();
+    public List<UserDto> findAll(@RequestParam(required = false) Long projectId,
+                                  @RequestParam(required = false) Long groupId) {
+        if (projectId != null) {
+            return userService.findByProjectAccess(projectId);
+        }
+        if (groupId != null) {
+            return userService.findByGroup(groupId);
+        }
+        return userService.findAll();
     }
 
     @PostMapping

@@ -58,6 +58,14 @@ public class UserService {
         return group != null && group.getProjects().stream().anyMatch(project -> project.getId().equals(projectId));
     }
 
+    @Transactional(readOnly = true)
+    public List<UserDto> findByGroup(Long groupId) {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getGroup() != null && user.getGroup().getId().equals(groupId))
+                .map(this::toDto)
+                .toList();
+    }
+
     public UserDto create(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.username())) {
             throw new IllegalArgumentException("Username '" + request.username() + "' is already taken");
