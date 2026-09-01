@@ -18,6 +18,7 @@ import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -48,6 +49,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     private final UserService userService;
     private final TimeEntryService timeEntryService;
 
+    private final Span userNameLabel = new Span();
     private final TextField username = new TextField("Username");
     private final TextField fullName = new TextField("Full name");
     private final TextField email = new TextField("Email");
@@ -87,7 +89,11 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         tabSheet.add("Projects", buildProjectsTab());
         tabSheet.setSizeFull();
 
-        add(new RouterLink("← Back to users", UsersView.class), tabSheet);
+        userNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
+        HorizontalLayout header = new HorizontalLayout(new RouterLink("← Back to users", UsersView.class), userNameLabel);
+        header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
+
+        add(header, tabSheet);
         setFlexGrow(1, tabSheet);
     }
 
@@ -103,6 +109,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         }
         currentRole = user.role();
 
+        userNameLabel.setText(user.fullName());
         username.setValue(user.username());
         fullName.setValue(user.fullName());
         email.setValue(user.email());
@@ -226,6 +233,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
             UserDto updated = userService.update(userId, new UpdateUserRequest(fullName.getValue(), email.getValue(),
                     role.getValue(), groupIds, enabled.getValue()));
             password.clear();
+            userNameLabel.setText(updated.fullName());
             currentRole = updated.role();
             updatePasswordFieldState();
             refreshComputedTabs(updated);

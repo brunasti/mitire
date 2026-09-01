@@ -102,8 +102,9 @@ detail page, a picker to link an additional existing user, and a trashcan icon p
 to remove one from the group — with confirmation). The Groups list page is create-only
 — editing happens on the detail page.
 
-Clicking a user row on the Users page opens `/users/{id}`, a detail page with four
-tabs: **User details** (edit profile, role, groups — a multi-select, since a user can
+Clicking a user row on the Users page opens `/users/{id}`, showing the user's full name
+next to the "← Back to users" link (kept live after an edit), with four tabs: **User
+details** (edit profile, role, groups — a multi-select, since a user can
 belong to any number of groups — enabled status, and — for non-ADMIN users — reset the
 password), **Time recordings** (every time entry logged by that user, across all
 projects), **Groups** (every group the user belongs to — click through to a group's
