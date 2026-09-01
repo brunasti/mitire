@@ -7,6 +7,7 @@ import it.brunasti.mitire.backend.domain.User;
 import it.brunasti.mitire.backend.repository.TimeEntryRepository;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @Transactional
@@ -49,6 +51,22 @@ public class TimeEntryService {
     }
 
     @Transactional(readOnly = true)
+    public TimeEntryDto findByIdForUser(Long id, Long requestingUserId) {
+        return toDto(getReferenceChecked(id, requestingUserId));
+    }
+
+    public TimeEntryDto update(Long id, Long requestingUserId, UpdateTimeEntryRequest request) {
+        TimeEntry entry = getReferenceChecked(id, requestingUserId);
+        entry.setHours(request.hours());
+        entry.setDescription(request.description());
+        return toDto(timeEntryRepository.save(entry));
+    }
+
+    public void delete(Long id, Long requestingUserId) {
+        timeEntryRepository.delete(getReferenceChecked(id, requestingUserId));
+    }
+
+    @Transactional(readOnly = true)
     public List<TimeEntryDto> search(Long userId, Long projectId, LocalDate from, LocalDate to) {
         Specification<TimeEntry> spec = Specification.allOf();
         if (userId != null) {
@@ -71,6 +89,16 @@ public class TimeEntryService {
             return true;
         }
         return user.getGroups().stream().anyMatch(group -> group.getProjects().contains(project));
+    }
+
+    private TimeEntry getReferenceChecked(Long id, Long requestingUserId) {
+        TimeEntry entry = timeEntryRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Time entry " + id + " not found"));
+        User requester = userService.getReference(requestingUserId);
+        if (requester.getRole() != Role.ADMIN && !entry.getUser().getId().equals(requestingUserId)) {
+            throw new AccessDeniedException("You do not have access to this time entry");
+        }
+        return entry;
     }
 
     private TimeEntryDto toDto(TimeEntry entry) {

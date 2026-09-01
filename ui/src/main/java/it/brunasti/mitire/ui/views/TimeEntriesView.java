@@ -6,6 +6,7 @@ import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UserDto;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -100,6 +101,8 @@ public class TimeEntriesView extends VerticalLayout {
         grid.addColumn(TimeEntryDto::status).setHeader("Status");
         grid.setWidthFull();
         grid.setHeight("400px");
+        grid.getStyle().set("cursor", "pointer");
+        grid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));
         return grid;
     }
 

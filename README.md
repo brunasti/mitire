@@ -117,6 +117,18 @@ relationship tab that shows a link also has a picker to add another one, backed 
 same handful of `addX`-style service methods regardless of which side initiates the
 link.
 
+## Time entries
+
+Clicking a row on the home page (`/`, your own time entries) opens `/time-entries/{id}`
+to edit it: Hours and Description are the only editable fields (project/date/status are
+shown read-only — creating a new entry for a different project/date is a separate
+action from the home page's form). **Save** persists and returns to `/`; **Cancel**
+returns without saving; **Delete** asks for confirmation first, then deletes and
+returns to `/`. Only the entry's own owner can view/edit/delete it — ADMIN bypasses
+this, same as the rest of the access model — enforced in `TimeEntryService`, not just
+hidden in the UI, so `GET`/`PUT`/`DELETE /api/time-entries/{id}` reject a non-owner,
+non-admin caller with 403.
+
 ## My Profile
 
 The user icon button next to "Log out" (any role, not just ADMIN) opens `/profile`,
@@ -149,6 +161,16 @@ update projects, groups, or users require the ADMIN role.
   authenticated user, no ADMIN role required; these act on the caller's own account
   only, resolved from the request's authentication
 - `GET /api/time-entries?userId=&projectId=&from=&to=`, `POST /api/time-entries`
+- `GET /api/time-entries/{id}`, `PUT /api/time-entries/{id}` (hours/description only),
+  `DELETE /api/time-entries/{id}` — all three restricted to the entry's own owner or
+  an ADMIN (403 otherwise)
+
+Every `@Valid @RequestBody` failure across the API returns a proper `400` with an
+`{"error": "..."}` body via an explicit `@ExceptionHandler(MethodArgumentNotValidException.class)`
+in `ApiExceptionHandler` — without it, Spring's default handling calls `sendError(400)`,
+which triggers Boot's `/error` forward and gets re-caught by the Vaadin security chain,
+silently turning it into a `403`. Same root cause, and same fix, as the `AccessDeniedException`
+handler above it.
 
 ```bash
 curl -u admin:admin123 http://localhost:8080/api/time-entries
