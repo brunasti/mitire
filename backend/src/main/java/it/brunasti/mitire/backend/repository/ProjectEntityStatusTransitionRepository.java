@@ -10,5 +10,7 @@ public interface ProjectEntityStatusTransitionRepository extends JpaRepository<P
 
     List<ProjectEntityStatusTransition> findByParentStatusId(Long parentStatusId);
 
+    List<ProjectEntityStatusTransition> findByChildStatusId(Long childStatusId);
+
     Optional<ProjectEntityStatusTransition> findByParentStatusIdAndChildStatusId(Long parentStatusId, Long childStatusId);
 }

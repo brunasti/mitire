@@ -3,13 +3,17 @@ package it.brunasti.mitire.backend.service;
 import it.brunasti.mitire.backend.domain.Project;
 import it.brunasti.mitire.backend.domain.ProjectEntityStatus;
 import it.brunasti.mitire.backend.domain.ProjectEntityStatusTransition;
+import it.brunasti.mitire.backend.domain.Role;
+import it.brunasti.mitire.backend.domain.User;
 import it.brunasti.mitire.backend.repository.ProjectRepository;
 import it.brunasti.mitire.backend.repository.ProjectEntityStatusRepository;
 import it.brunasti.mitire.backend.repository.ProjectEntityStatusTransitionRepository;
 import it.brunasti.mitire.backend.repository.TimeEntryRepository;
+import it.brunasti.mitire.backend.repository.UserRepository;
 import it.brunasti.mitire.backend.web.dto.CreateProjectEntityStatusRequest;
 import it.brunasti.mitire.backend.web.dto.ProjectEntityStatusDto;
 import it.brunasti.mitire.backend.web.dto.UpdateProjectEntityStatusRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,15 +31,18 @@ public class ProjectEntityStatusService {
     private final ProjectEntityStatusTransitionRepository transitionRepository;
     private final ProjectRepository projectRepository;
     private final TimeEntryRepository timeEntryRepository;
+    private final UserRepository userRepository;
 
     public ProjectEntityStatusService(ProjectEntityStatusRepository projectStatusRepository,
                                  ProjectEntityStatusTransitionRepository transitionRepository,
                                  ProjectRepository projectRepository,
-                                 TimeEntryRepository timeEntryRepository) {
+                                 TimeEntryRepository timeEntryRepository,
+                                 UserRepository userRepository) {
         this.projectStatusRepository = projectStatusRepository;
         this.transitionRepository = transitionRepository;
         this.projectRepository = projectRepository;
         this.timeEntryRepository = timeEntryRepository;
+        this.userRepository = userRepository;
     }
 
     void seedDefaultStatuses(Project project) {
@@ -80,7 +87,18 @@ public class ProjectEntityStatusService {
                 .toList();
     }
 
-    public ProjectEntityStatusDto addChild(Long projectId, Long statusId, Long childStatusId) {
+    @Transactional(readOnly = true)
+    public List<ProjectEntityStatusDto> findParents(Long projectId, Long statusId) {
+        getReferenceForProject(projectId, statusId);
+        return transitionRepository.findByChildStatusId(statusId).stream()
+                .map(ProjectEntityStatusTransition::getParentStatus)
+                .sorted(Comparator.comparingInt(ProjectEntityStatus::getSequence))
+                .map(this::toDto)
+                .toList();
+    }
+
+    public ProjectEntityStatusDto addChild(Long projectId, Long statusId, Long childStatusId, Long requestingUserId) {
+        requireWorkflowEditAccess(projectId, requestingUserId);
         ProjectEntityStatus parent = getReferenceForProject(projectId, statusId);
         ProjectEntityStatus child = getReferenceForProject(projectId, childStatusId);
         if (parent.getId().equals(child.getId())) {
@@ -95,7 +113,8 @@ public class ProjectEntityStatusService {
         return toDto(parent);
     }
 
-    public ProjectEntityStatusDto removeChild(Long projectId, Long statusId, Long childStatusId) {
+    public ProjectEntityStatusDto removeChild(Long projectId, Long statusId, Long childStatusId, Long requestingUserId) {
+        requireWorkflowEditAccess(projectId, requestingUserId);
         ProjectEntityStatus parent = getReferenceForProject(projectId, statusId);
         transitionRepository.findByParentStatusIdAndChildStatusId(statusId, childStatusId)
                 .ifPresent(transitionRepository::delete);
@@ -108,7 +127,8 @@ public class ProjectEntityStatusService {
                 .orElseThrow(() -> new NoSuchElementException("Project " + projectId + " has no starting status defined"));
     }
 
-    public ProjectEntityStatusDto create(Long projectId, CreateProjectEntityStatusRequest request) {
+    public ProjectEntityStatusDto create(Long projectId, CreateProjectEntityStatusRequest request, Long requestingUserId) {
+        requireWorkflowEditAccess(projectId, requestingUserId);
         if (projectStatusRepository.existsByProjectIdAndName(projectId, request.name())) {
             throw new IllegalArgumentException("A status named '" + request.name() + "' already exists for this project");
         }
@@ -127,7 +147,9 @@ public class ProjectEntityStatusService {
         return toDto(projectStatusRepository.save(status));
     }
 
-    public ProjectEntityStatusDto update(Long projectId, Long statusId, UpdateProjectEntityStatusRequest request) {
+    public ProjectEntityStatusDto update(Long projectId, Long statusId, UpdateProjectEntityStatusRequest request,
+                                          Long requestingUserId) {
+        requireWorkflowEditAccess(projectId, requestingUserId);
         ProjectEntityStatus status = getReferenceForProject(projectId, statusId);
         if (!status.getName().equals(request.name())
                 && projectStatusRepository.existsByProjectIdAndName(projectId, request.name())) {
@@ -139,7 +161,8 @@ public class ProjectEntityStatusService {
         return toDto(projectStatusRepository.save(status));
     }
 
-    public ProjectEntityStatusDto setStarting(Long projectId, Long statusId) {
+    public ProjectEntityStatusDto setStarting(Long projectId, Long statusId, Long requestingUserId) {
+        requireWorkflowEditAccess(projectId, requestingUserId);
         ProjectEntityStatus status = getReferenceForProject(projectId, statusId);
         for (ProjectEntityStatus other : projectStatusRepository.findByProjectIdOrderBySequence(projectId)) {
             if (other.isStartingStatus() && !other.getId().equals(statusId)) {
@@ -151,7 +174,8 @@ public class ProjectEntityStatusService {
         return toDto(projectStatusRepository.save(status));
     }
 
-    public void delete(Long projectId, Long statusId) {
+    public void delete(Long projectId, Long statusId, Long requestingUserId) {
+        requireWorkflowEditAccess(projectId, requestingUserId);
         ProjectEntityStatus status = getReferenceForProject(projectId, statusId);
         if (status.isStartingStatus()) {
             throw new IllegalArgumentException("Can't delete the starting status — set another status as starting first");
@@ -162,11 +186,13 @@ public class ProjectEntityStatusService {
         projectStatusRepository.delete(status);
     }
 
-    public void moveUp(Long projectId, Long statusId) {
+    public void moveUp(Long projectId, Long statusId, Long requestingUserId) {
+        requireWorkflowEditAccess(projectId, requestingUserId);
         swapWithNeighbor(projectId, statusId, true);
     }
 
-    public void moveDown(Long projectId, Long statusId) {
+    public void moveDown(Long projectId, Long statusId, Long requestingUserId) {
+        requireWorkflowEditAccess(projectId, requestingUserId);
         swapWithNeighbor(projectId, statusId, false);
     }
 
@@ -206,6 +232,24 @@ public class ProjectEntityStatusService {
             throw new NoSuchElementException("Status " + statusId + " not found for project " + projectId);
         }
         return status;
+    }
+
+    /**
+     * Editing a project's workflow (its statuses and their dependencies) is restricted to
+     * ADMIN or the project's own Owner — a plain member with access to the project can't.
+     */
+    private void requireWorkflowEditAccess(Long projectId, Long requestingUserId) {
+        User requester = userRepository.findById(requestingUserId)
+                .orElseThrow(() -> new NoSuchElementException("User " + requestingUserId + " not found"));
+        if (requester.getRole() == Role.ADMIN) {
+            return;
+        }
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new NoSuchElementException("Project " + projectId + " not found"));
+        User owner = project.getOwner();
+        if (owner == null || !owner.getId().equals(requestingUserId)) {
+            throw new AccessDeniedException("Only the project owner or an ADMIN can edit the workflow");
+        }
     }
 
     private ProjectEntityStatusDto toDto(ProjectEntityStatus status) {

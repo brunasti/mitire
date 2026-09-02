@@ -54,7 +54,8 @@ public class MainLayout extends AppLayout {
         addToNavbar(header);
 
         VerticalLayout nav = new VerticalLayout(
-                new RouterLink("Time entries", TimeEntriesView.class)
+                new RouterLink("Time entries", TimeEntriesView.class),
+                new RouterLink("My Projects", MyProjectsView.class)
         );
         if (isAdmin()) {
             nav.add(

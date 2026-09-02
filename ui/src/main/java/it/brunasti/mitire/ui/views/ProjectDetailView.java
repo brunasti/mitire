@@ -39,6 +39,7 @@ import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.spring.security.AuthenticationContext;
 import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.RolesAllowed;
 
@@ -63,6 +64,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final DatePicker startDate = new DatePicker("Start date");
     private final DatePicker endDate = new DatePicker("End date");
     private final ComboBox<UserDto> approver = new ComboBox<>("Approver");
+    private final ComboBox<UserDto> owner = new ComboBox<>("Owner");
     private final ComboBox<GroupDto> addGroup = new ComboBox<>("Add group");
     private final Span projectNameLabel = new Span();
 
@@ -74,17 +76,24 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private Grid.Column<GroupDto> groupActionsColumn;
     private Grid.Column<ProjectEntityStatusDto> statusActionsColumn;
 
+    private final Long currentUserId;
+
     private List<GroupDto> allGroups;
     private Long projectId;
 
     public ProjectDetailView(ProjectService projectService, TimeEntryService timeEntryService,
                               UserService userService, GroupService groupService,
-                              ProjectEntityStatusService projectEntityStatusService) {
+                              ProjectEntityStatusService projectEntityStatusService,
+                              AuthenticationContext authenticationContext) {
         this.projectService = projectService;
         this.timeEntryService = timeEntryService;
         this.userService = userService;
         this.groupService = groupService;
         this.projectEntityStatusService = projectEntityStatusService;
+        this.currentUserId = authenticationContext.getPrincipalName()
+                .map(userService::getByUsername)
+                .map(UserDto::id)
+                .orElseThrow();
 
         setSizeFull();
 
@@ -92,6 +101,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         endDate.setWidth("160px");
         approver.setItemLabelGenerator(UserDto::fullName);
         approver.setClearButtonVisible(true);
+        owner.setItemLabelGenerator(UserDto::fullName);
+        owner.setClearButtonVisible(true);
 
         allGroups = groupService.findAll();
         addGroup.setItemLabelGenerator(GroupDto::name);
@@ -137,6 +148,12 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         if (approverId != null) {
             projectUsers.stream().filter(u -> u.id().equals(approverId)).findFirst().ifPresent(approver::setValue);
         }
+        owner.setItems(projectUsers);
+        owner.clear();
+        Long ownerId = project.ownerId();
+        if (ownerId != null) {
+            projectUsers.stream().filter(u -> u.id().equals(ownerId)).findFirst().ifPresent(owner::setValue);
+        }
         refreshGroups();
         refreshStatuses();
     }
@@ -147,8 +164,9 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         Button save = new Button("Save", e -> {
             try {
                 Long approverId = approver.getValue() != null ? approver.getValue().id() : null;
+                Long ownerId = owner.getValue() != null ? owner.getValue().id() : null;
                 ProjectDto updated = projectService.update(projectId, new UpdateProjectRequest(
-                        name.getValue(), active.getValue(), startDate.getValue(), endDate.getValue(), approverId));
+                        name.getValue(), active.getValue(), startDate.getValue(), endDate.getValue(), approverId, ownerId));
                 projectNameLabel.setText(updated.name());
                 Notification.show("Project updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (IllegalArgumentException ex) {
@@ -158,7 +176,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
         HorizontalLayout startAndEndDate = new HorizontalLayout(startDate, endDate);
 
-        FormLayout form = new FormLayout(code, name, active, startAndEndDate, approver, save);
+        FormLayout form = new FormLayout(code, name, active, startAndEndDate, approver, owner, save);
         form.setMaxWidth("600px");
         return form;
     }
@@ -270,6 +288,12 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             projectUsers.stream().filter(u -> u.id().equals(currentApprover.id())).findFirst()
                     .ifPresentOrElse(approver::setValue, approver::clear);
         }
+        UserDto currentOwner = owner.getValue();
+        owner.setItems(projectUsers);
+        if (currentOwner != null) {
+            projectUsers.stream().filter(u -> u.id().equals(currentOwner.id())).findFirst()
+                    .ifPresentOrElse(owner::setValue, owner::clear);
+        }
     }
 
     private VerticalLayout buildStatusesTab() {
@@ -305,7 +329,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         }
         try {
             projectEntityStatusService.create(projectId,
-                    new CreateProjectEntityStatusRequest(newStatusName.getValue(), newStatusDescription.getValue()));
+                    new CreateProjectEntityStatusRequest(newStatusName.getValue(), newStatusDescription.getValue()),
+                    currentUserId);
             newStatusName.clear();
             newStatusDescription.clear();
             refreshStatuses();
@@ -320,7 +345,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         up.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
         up.setTooltipText("Move up");
         up.addClickListener(e -> {
-            projectEntityStatusService.moveUp(projectId, status.id());
+            projectEntityStatusService.moveUp(projectId, status.id(), currentUserId);
             refreshStatuses();
         });
 
@@ -328,7 +353,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         down.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
         down.setTooltipText("Move down");
         down.addClickListener(e -> {
-            projectEntityStatusService.moveDown(projectId, status.id());
+            projectEntityStatusService.moveDown(projectId, status.id(), currentUserId);
             refreshStatuses();
         });
 
@@ -354,7 +379,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             setStarting.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
             setStarting.setTooltipText("Set as starting status");
             setStarting.addClickListener(e -> {
-                projectEntityStatusService.setStarting(projectId, status.id());
+                projectEntityStatusService.setStarting(projectId, status.id(), currentUserId);
                 refreshStatuses();
             });
             actions.addComponentAsFirst(setStarting);
@@ -377,7 +402,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         Button save = new Button("Save", e -> {
             try {
                 projectEntityStatusService.update(projectId, status.id(), new UpdateProjectEntityStatusRequest(
-                        editName.getValue(), editDescription.getValue(), editActive.getValue()));
+                        editName.getValue(), editDescription.getValue(), editActive.getValue()), currentUserId);
                 refreshStatuses();
                 dialog.close();
                 Notification.show("Status updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -406,7 +431,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
     private void deleteStatus(ProjectEntityStatusDto status) {
         try {
-            projectEntityStatusService.delete(projectId, status.id());
+            projectEntityStatusService.delete(projectId, status.id(), currentUserId);
             refreshStatuses();
             Notification.show("Status deleted").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {

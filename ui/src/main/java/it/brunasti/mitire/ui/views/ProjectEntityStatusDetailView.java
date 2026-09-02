@@ -1,8 +1,10 @@
 package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.service.ProjectEntityStatusService;
+import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.ProjectEntityStatusDto;
 import it.brunasti.mitire.backend.web.dto.UpdateProjectEntityStatusRequest;
+import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -11,6 +13,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -27,6 +30,7 @@ import com.vaadin.flow.router.NotFoundException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.spring.security.AuthenticationContext;
 import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.RolesAllowed;
 
@@ -47,18 +51,26 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
     private final TextField description = new TextField("Description");
     private final Checkbox active = new Checkbox("Active");
     private final HorizontalLayout startingRow = new HorizontalLayout();
+    private final Div parentsField = new Div();
     private final ComboBox<ProjectEntityStatusDto> addChild = new ComboBox<>("Add depending status");
 
     private final Grid<ProjectEntityStatusDto> childrenGrid = new Grid<>(ProjectEntityStatusDto.class, false);
 
     private Grid.Column<ProjectEntityStatusDto> childActionsColumn;
 
+    private final Long currentUserId;
+
     private Long statusId;
     private Long projectId;
     private boolean startingStatus;
 
-    public ProjectEntityStatusDetailView(ProjectEntityStatusService projectEntityStatusService) {
+    public ProjectEntityStatusDetailView(ProjectEntityStatusService projectEntityStatusService, UserService userService,
+                                          AuthenticationContext authenticationContext) {
         this.projectEntityStatusService = projectEntityStatusService;
+        this.currentUserId = authenticationContext.getPrincipalName()
+                .map(userService::getByUsername)
+                .map(UserDto::id)
+                .orElseThrow();
 
         setSizeFull();
 
@@ -98,6 +110,7 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
         active.setValue(status.active());
         statusNameLabel.setText(status.name());
         refreshStartingRow();
+        refreshParents();
 
         refreshChildren();
     }
@@ -109,10 +122,26 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
         Button delete = new Button("Delete", e -> confirmDelete());
         delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
 
-        FormLayout form = new FormLayout(sequence, name, description, active, startingRow,
-                new HorizontalLayout(save, delete));
+        FormLayout form = new FormLayout();
+        form.add(sequence, name, description, active, startingRow);
+        form.addFormItem(parentsField, "Parent status(es)");
+        form.add(new HorizontalLayout(save, delete));
         form.setMaxWidth("600px");
         return form;
+    }
+
+    private void refreshParents() {
+        parentsField.removeAll();
+        List<ProjectEntityStatusDto> parents = projectEntityStatusService.findParents(projectId, statusId);
+        if (parents.isEmpty()) {
+            parentsField.add(new Span("None"));
+            return;
+        }
+        for (ProjectEntityStatusDto parent : parents) {
+            RouterLink link = new RouterLink(parent.name(), ProjectEntityStatusDetailView.class, parent.id());
+            Div line = new Div(link);
+            parentsField.add(line);
+        }
     }
 
     private void refreshStartingRow() {
@@ -124,7 +153,7 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
         } else {
             Button setStarting = new Button("Set as starting status", VaadinIcon.STAR_O.create());
             setStarting.addClickListener(e -> {
-                projectEntityStatusService.setStarting(projectId, statusId);
+                projectEntityStatusService.setStarting(projectId, statusId, currentUserId);
                 startingStatus = true;
                 refreshStartingRow();
                 Notification.show("Starting status updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -141,7 +170,8 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
         }
         try {
             ProjectEntityStatusDto updated = projectEntityStatusService.update(projectId, statusId,
-                    new UpdateProjectEntityStatusRequest(name.getValue(), description.getValue(), active.getValue()));
+                    new UpdateProjectEntityStatusRequest(name.getValue(), description.getValue(), active.getValue()),
+                    currentUserId);
             statusNameLabel.setText(updated.name());
             Notification.show("Status updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
@@ -162,7 +192,7 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
 
     private void delete() {
         try {
-            projectEntityStatusService.delete(projectId, statusId);
+            projectEntityStatusService.delete(projectId, statusId, currentUserId);
             Notification.show("Status deleted").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             UI.getCurrent().navigate(ProjectDetailView.class, projectId);
         } catch (IllegalArgumentException ex) {
@@ -198,7 +228,7 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
             Notifications.showError("Select a status to add");
             return;
         }
-        projectEntityStatusService.addChild(projectId, statusId, selected.id());
+        projectEntityStatusService.addChild(projectId, statusId, selected.id(), currentUserId);
         refreshChildren();
         Notification.show("Depending status added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
@@ -223,7 +253,7 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
     }
 
     private void removeChild(ProjectEntityStatusDto child) {
-        projectEntityStatusService.removeChild(projectId, statusId, child.id());
+        projectEntityStatusService.removeChild(projectId, statusId, child.id(), currentUserId);
         refreshChildren();
         Notification.show("Dependency removed").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }

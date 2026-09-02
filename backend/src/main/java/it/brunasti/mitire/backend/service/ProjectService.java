@@ -40,6 +40,11 @@ public class ProjectService {
         return projectRepository.findByApproverId(approverId).stream().map(this::toDto).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ProjectDto> findByOwner(Long ownerId) {
+        return projectRepository.findByOwnerId(ownerId).stream().map(this::toDto).toList();
+    }
+
     public ProjectDto create(CreateProjectRequest request) {
         if (projectRepository.existsByCode(request.code())) {
             throw new IllegalArgumentException("A project with code '" + request.code() + "' already exists");
@@ -67,7 +72,8 @@ public class ProjectService {
         project.setActive(request.active());
         project.setStartDate(request.startDate());
         project.setEndDate(request.endDate());
-        project.setApprover(resolveApprover(id, request.approverId()));
+        project.setApprover(resolveUserWithAccess(id, request.approverId(), "approver"));
+        project.setOwner(resolveUserWithAccess(id, request.ownerId(), "owner"));
         return toDto(projectRepository.save(project));
     }
 
@@ -78,10 +84,13 @@ public class ProjectService {
 
     ProjectDto toDto(Project project) {
         User approver = project.getApprover();
+        User owner = project.getOwner();
         return new ProjectDto(project.getId(), project.getCode(), project.getName(), project.isActive(),
                 project.getStartDate(), project.getEndDate(),
                 approver != null ? approver.getId() : null,
-                approver != null ? approver.getFullName() : null);
+                approver != null ? approver.getFullName() : null,
+                owner != null ? owner.getId() : null,
+                owner != null ? owner.getFullName() : null);
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
@@ -90,14 +99,14 @@ public class ProjectService {
         }
     }
 
-    private User resolveApprover(Long projectId, Long approverId) {
-        if (approverId == null) {
+    private User resolveUserWithAccess(Long projectId, Long userId, String roleLabel) {
+        if (userId == null) {
             return null;
         }
-        User user = userRepository.findById(approverId)
-                .orElseThrow(() -> new NoSuchElementException("User " + approverId + " not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User " + userId + " not found"));
         if (!userHasAccessToProject(user, projectId)) {
-            throw new IllegalArgumentException("The approver must be a user with access to this project");
+            throw new IllegalArgumentException("The " + roleLabel + " must be a user with access to this project");
         }
         return user;
     }

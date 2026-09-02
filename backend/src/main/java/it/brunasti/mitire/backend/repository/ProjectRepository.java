@@ -13,4 +13,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     boolean existsByCode(String code);
 
     List<Project> findByApproverId(Long approverId);
+
+    List<Project> findByOwnerId(Long ownerId);
 }

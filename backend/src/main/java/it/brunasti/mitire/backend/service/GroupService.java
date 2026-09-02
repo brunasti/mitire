@@ -112,9 +112,12 @@ public class GroupService {
 
     private ProjectDto toProjectDto(Project project) {
         User approver = project.getApprover();
+        User owner = project.getOwner();
         return new ProjectDto(project.getId(), project.getCode(), project.getName(), project.isActive(),
                 project.getStartDate(), project.getEndDate(),
                 approver != null ? approver.getId() : null,
-                approver != null ? approver.getFullName() : null);
+                approver != null ? approver.getFullName() : null,
+                owner != null ? owner.getId() : null,
+                owner != null ? owner.getFullName() : null);
     }
 }

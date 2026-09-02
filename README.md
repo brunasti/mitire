@@ -173,22 +173,32 @@ constraint), since none was asked for.
 Clicking a status row on a project's **Statuses** tab now opens `/statuses/{id}`, with
 two tabs:
 
-- **Status details** — Order (read-only), Name, Description, Active, and the starting
+- **Status details** — Order (read-only), Name, Description, Active, the starting
   indicator/action (a star, or a button to make this the starting status — the same
-  action available from the Statuses tab's own list); **Save** and **Delete** (with
-  confirmation; same server-side rules as deleting from the list — blocked if it's the
-  starting status or if any time entry references it)
+  action available from the Statuses tab's own list), and **Parent status(es)** — a
+  read-only list of every status that can reach *this* one (the reverse of "Depending
+  statuses" below), each a link to that parent's own detail page, or "None" if this
+  status isn't reachable from any other; **Save** and **Delete** (with confirmation;
+  same server-side rules as deleting from the list — blocked if it's the starting
+  status or if any time entry references it)
 - **Depending statuses** — every status directly reachable from this one, a picker to
   link another of the project's statuses (excluding itself and ones already linked),
   and a trashcan icon per row to unlink (with confirmation); clicking a row navigates
   to *that* status's own detail page, so the graph can be browsed depending-status by
   depending-status
 
+A status's parent list is purely informational here — it's edited from the *parent's*
+own "Depending statuses" tab (or the Owner's dependencies dialog), never from the
+child's side, and since the graph allows a status to be reachable from more than one
+parent (nothing enforces a single-parent tree), this list can show more than one
+entry.
+
 Deleting a status cascades at the database level to remove any transition row
 involving it, on either side — no orphaned rows possible. Linking/unlinking is
-ADMIN-only and idempotent (linking an already-linked pair, or unlinking a pair that
-isn't linked, succeeds as a no-op, matching every other relationship in this app);
-linking rejects a self-loop or a status from a different project (`400`/`404`).
+restricted to ADMIN or the project's Owner (see "Owner" below) and is idempotent
+(linking an already-linked pair, or unlinking a pair that isn't linked, succeeds as a
+no-op, matching every other relationship in this app); linking rejects a self-loop or
+a status from a different project (`400`/`404`).
 
 ### Approver
 
@@ -201,6 +211,35 @@ project. The dropdown has a clear button, since a project need not have an appro
 assigned. The reverse view lives on the user's own page: `/users/{id}`'s **Approver**
 tab lists every project that user is the designated approver of (clicking a row opens
 that project's detail page) — backed by `GET /api/projects?approverId=`.
+
+### Owner (and who may edit the workflow)
+
+Each project optionally has one **Owner** — set the same way as the Approver (a
+"Owner" dropdown on the **Project details** tab, candidates limited to users with
+access to the project, `400` otherwise) and looked up the same way
+(`GET /api/projects?ownerId=`). The Owner isn't just informational: editing a
+project's workflow — creating, renaming, deleting, or reordering its statuses,
+changing which one is the starting status, or changing which statuses are reachable
+from which — is restricted to **ADMIN or that project's Owner**; a plain member with
+ordinary access to the project cannot, even though they can view everything else about
+it. This is enforced in `ProjectEntityStatusService.requireWorkflowEditAccess()` on
+every mutating method (not just in a controller annotation), so it applies equally
+whether the call comes from the UI or directly through the REST API — a non-owner,
+non-admin caller gets a `403` with `"Only the project owner or an ADMIN can edit the
+workflow"`.
+
+Because `/projects/{id}` (and everything under it, including the Statuses tab and the
+`/statuses/{id}` workflow-graph page) is an ADMIN-only route, a non-admin Owner has no
+way to reach it. Instead, **My Projects** (`/my-projects`, in the drawer nav for every
+user) lists the projects the current user owns; clicking one opens
+**Project workflow** (`/project-workflow/{id}`) — a separate, minimal page with the
+same statuses list, add-status form, and per-row actions (move up/down, edit,
+set-starting, delete) as the admin Statuses tab, plus a "manage dependencies" dialog
+per status for editing its depending statuses in place, so an Owner never needs to
+visit the ADMIN-only pages at all. `ProjectWorkflowView` is reachable by any
+authenticated user at the route level, but checks in `setParameter()` that the caller
+is ADMIN or the project's Owner and reroutes to the same "Access denied" page used
+elsewhere in the app otherwise.
 
 The Groups page (`/groups`) shows a "Groups" heading and splits its content into two
 tabs: **Groups** (the sortable list — Name, Projects and Users columns can all be
@@ -287,10 +326,10 @@ regardless of role (unlike an admin resetting *someone else's*).
 All endpoints require HTTP Basic auth (same users as the UI). Endpoints that create or
 update projects, groups, or users require the ADMIN role.
 
-- `GET /api/projects` (optionally `?approverId=` for projects a user is the approver
-  of), `GET /api/projects/{id}`, `POST /api/projects` (admin), `PUT /api/projects/{id}`
-  (admin) — the update body's `approverId` must belong to a user with access to the
-  project (`400` otherwise)
+- `GET /api/projects` (optionally `?approverId=` or `?ownerId=` for projects a user is
+  the approver/owner of), `GET /api/projects/{id}`, `POST /api/projects` (admin),
+  `PUT /api/projects/{id}` (admin) — the update body's `approverId`/`ownerId` must each
+  belong to a user with access to the project (`400` otherwise)
 - `GET /api/groups` (optionally `?projectId=` for groups granting access to a project),
   `GET /api/groups/{id}`, `POST /api/groups` (admin), `PUT /api/groups/{id}` (admin)
 - `PUT /api/groups/{id}/projects/{projectId}` (admin) — links an existing project to
@@ -317,26 +356,29 @@ update projects, groups, or users require the ADMIN role.
   — all three restricted to the entry's own owner or an ADMIN (403 otherwise)
 - `GET /api/projects/{projectId}/statuses` — any authenticated user
 - `GET /api/projects/{projectId}/statuses/{statusId}` — any authenticated user
-- `POST /api/projects/{projectId}/statuses` (admin) — body: name + optional
-  description; appends at the end of the project's sequence, active, not starting;
-  400 on a duplicate name within the project
-- `PUT /api/projects/{projectId}/statuses/{statusId}` (admin) — body: name,
+- `POST /api/projects/{projectId}/statuses` (ADMIN or the project's Owner — see
+  "Owner" above) — body: name + optional description; appends at the end of the
+  project's sequence, active, not starting; 400 on a duplicate name within the project
+- `PUT /api/projects/{projectId}/statuses/{statusId}` (ADMIN or Owner) — body: name,
   description, active
-- `DELETE /api/projects/{projectId}/statuses/{statusId}` (admin) — 400 if it's the
-  project's starting status, or if any time entry still references it
+- `DELETE /api/projects/{projectId}/statuses/{statusId}` (ADMIN or Owner) — 400 if
+  it's the project's starting status, or if any time entry still references it
 - `PUT /api/projects/{projectId}/statuses/{statusId}/move-up`,
-  `PUT .../move-down` (admin) — swaps `sequence` with the adjacent status; returns the
-  project's updated status list
-- `PUT /api/projects/{projectId}/statuses/{statusId}/set-starting` (admin) — makes
-  this the project's starting status, un-setting whichever status held it before
+  `PUT .../move-down` (ADMIN or Owner) — swaps `sequence` with the adjacent status;
+  returns the project's updated status list
+- `PUT /api/projects/{projectId}/statuses/{statusId}/set-starting` (ADMIN or Owner) —
+  makes this the project's starting status, un-setting whichever status held it before
 - `GET /api/projects/{projectId}/statuses/{statusId}/children` — any authenticated
   user; the statuses directly reachable from this one (the workflow graph)
+- `GET /api/projects/{projectId}/statuses/{statusId}/parents` — any authenticated
+  user; the statuses this one is directly reachable from (the reverse edge; can be
+  more than one, since nothing enforces a single-parent tree)
 - `PUT /api/projects/{projectId}/statuses/{statusId}/children/{childStatusId}`
-  (admin) — links `childStatusId` as reachable from `statusId` (a no-op, not an
-  error, if already linked); 400 on a self-loop, 404 if either status doesn't belong
-  to `projectId`
+  (ADMIN or Owner) — links `childStatusId` as reachable from `statusId` (a no-op, not
+  an error, if already linked); 400 on a self-loop, 404 if either status doesn't
+  belong to `projectId`
 - `DELETE /api/projects/{projectId}/statuses/{statusId}/children/{childStatusId}`
-  (admin) — unlinks (a no-op, not an error, if not linked)
+  (ADMIN or Owner) — unlinks (a no-op, not an error, if not linked)
 
 Every `@Valid @RequestBody` failure across the API returns a proper `400` with an
 `{"error": "..."}` body via an explicit `@ExceptionHandler(MethodArgumentNotValidException.class)`

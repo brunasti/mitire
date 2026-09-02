@@ -36,4 +36,8 @@ public class Project {
     @ManyToOne
     @JoinColumn(name = "approver_id")
     private User approver;
+
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
 }

@@ -22,9 +22,13 @@ public class ProjectController {
     }
 
     @GetMapping
-    public List<ProjectDto> findAll(@RequestParam(required = false) Long approverId) {
+    public List<ProjectDto> findAll(@RequestParam(required = false) Long approverId,
+                                     @RequestParam(required = false) Long ownerId) {
         if (approverId != null) {
             return projectService.findByApprover(approverId);
+        }
+        if (ownerId != null) {
+            return projectService.findByOwner(ownerId);
         }
         return projectService.findAll();
     }
