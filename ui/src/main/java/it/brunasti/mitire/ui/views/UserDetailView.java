@@ -66,6 +66,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
     private final Grid<ProjectDto> projectsGrid = new Grid<>(ProjectDto.class, false);
     private final Grid<ProjectDto> approverGrid = new Grid<>(ProjectDto.class, false);
+    private final Grid<ProjectDto> ownerGrid = new Grid<>(ProjectDto.class, false);
 
     private Grid.Column<GroupDto> groupActionsColumn;
 
@@ -94,6 +95,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         tabSheet.add("Groups", buildGroupsTab());
         tabSheet.add("Projects", buildProjectsTab());
         tabSheet.add("Approver", buildApproverTab());
+        tabSheet.add("Owner", buildOwnerTab());
         tabSheet.setSizeFull();
 
         userNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
@@ -240,6 +242,19 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         return layout;
     }
 
+    private VerticalLayout buildOwnerTab() {
+        ownerGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        ownerGrid.addColumn(ProjectDto::name).setHeader("Name");
+        ownerGrid.addColumn(ProjectDto::active).setHeader("Active");
+        ownerGrid.setSizeFull();
+        ownerGrid.getStyle().set("cursor", "pointer");
+        ownerGrid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
+
+        VerticalLayout layout = new VerticalLayout(ownerGrid);
+        layout.setSizeFull();
+        return layout;
+    }
+
     private void save() {
         if (fullName.getValue().isBlank() || email.getValue().isBlank() || role.getValue() == null) {
             Notifications.showError("Full name, email and role are required");
@@ -268,6 +283,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         addGroup.setItems(allGroups.stream().filter(g -> !user.groups().contains(g)).toList());
         projectsGrid.setItems(userService.findAccessibleProjects(userId));
         approverGrid.setItems(projectService.findByApprover(userId));
+        ownerGrid.setItems(projectService.findByOwner(userId));
     }
 
     private void updatePasswordFieldState() {

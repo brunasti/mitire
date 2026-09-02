@@ -217,7 +217,9 @@ that project's detail page) — backed by `GET /api/projects?approverId=`.
 Each project optionally has one **Owner** — set the same way as the Approver (a
 "Owner" dropdown on the **Project details** tab, candidates limited to users with
 access to the project, `400` otherwise) and looked up the same way
-(`GET /api/projects?ownerId=`). The Owner isn't just informational: editing a
+(`GET /api/projects?ownerId=`, and mirrored in a **Owner** tab on `/users/{id}` next
+to the Approver tab — every project that user owns, clicking a row opens that
+project's detail page). The Owner isn't just informational: editing a
 project's workflow — creating, renaming, deleting, or reordering its statuses,
 changing which one is the starting status, or changing which statuses are reachable
 from which — is restricted to **ADMIN or that project's Owner**; a plain member with
@@ -232,14 +234,16 @@ Because `/projects/{id}` (and everything under it, including the Statuses tab an
 `/statuses/{id}` workflow-graph page) is an ADMIN-only route, a non-admin Owner has no
 way to reach it. Instead, **My Projects** (`/my-projects`, in the drawer nav for every
 user) lists the projects the current user owns; clicking one opens
-**Project workflow** (`/project-workflow/{id}`) — a separate, minimal page with the
-same statuses list, add-status form, and per-row actions (move up/down, edit,
-set-starting, delete) as the admin Statuses tab, plus a "manage dependencies" dialog
-per status for editing its depending statuses in place, so an Owner never needs to
-visit the ADMIN-only pages at all. `ProjectWorkflowView` is reachable by any
-authenticated user at the route level, but checks in `setParameter()` that the caller
-is ADMIN or the project's Owner and reroutes to the same "Access denied" page used
-elsewhere in the app otherwise.
+**Project workflow** (`/project-workflow/{id}`, its heading showing the project's
+name) — a separate, minimal page with the same statuses list, add-status form, and
+per-row actions (move up/down, edit, set-starting, delete) as the admin Statuses tab,
+plus a "manage dependencies" dialog per status for editing its depending statuses in
+place, so an Owner never needs to visit the ADMIN-only pages at all. Clicking a status
+row itself (anywhere outside the action buttons) opens the same edit dialog as the
+pencil icon, for convenience. `ProjectWorkflowView` is reachable by any authenticated
+user at the route level, but checks in `setParameter()` that the caller is ADMIN or
+the project's Owner and reroutes to the same "Access denied" page used elsewhere in
+the app otherwise.
 
 The Groups page (`/groups`) shows a "Groups" heading and splits its content into two
 tabs: **Groups** (the sortable list — Name, Projects and Users columns can all be

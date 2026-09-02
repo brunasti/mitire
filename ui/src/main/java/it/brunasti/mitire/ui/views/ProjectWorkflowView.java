@@ -18,7 +18,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -57,9 +57,10 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
     private final Long currentUserId;
     private final Role currentUserRole;
 
-    private final Span projectNameLabel = new Span();
+    private final H2 projectNameLabel = new H2();
     private final Grid<ProjectEntityStatusDto> statusesGrid = new Grid<>(ProjectEntityStatusDto.class, false);
 
+    private Grid.Column<ProjectEntityStatusDto> statusActionsColumn;
     private Long projectId;
 
     public ProjectWorkflowView(ProjectService projectService, ProjectEntityStatusService projectEntityStatusService,
@@ -74,7 +75,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
 
         setSizeFull();
 
-        projectNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
+        projectNameLabel.getStyle().set("margin", "0 0 0 1rem");
         HorizontalLayout header = new HorizontalLayout(
                 new RouterLink("← Back to my projects", MyProjectsView.class), projectNameLabel);
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
@@ -116,8 +117,14 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         statusesGrid.addColumn(ProjectEntityStatusDto::description).setHeader("Description");
         statusesGrid.addColumn(ProjectEntityStatusDto::active).setHeader("Active");
         statusesGrid.addColumn(ProjectEntityStatusDto::startingStatus).setHeader("Starting");
-        statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
+        statusActionsColumn = statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
         statusesGrid.setSizeFull();
+        statusesGrid.getStyle().set("cursor", "pointer");
+        statusesGrid.addItemClickListener(e -> {
+            if (e.getColumn() != statusActionsColumn) {
+                openEditStatusDialog(e.getItem());
+            }
+        });
 
         VerticalLayout layout = new VerticalLayout(addForm, statusesGrid);
         layout.setSizeFull();
