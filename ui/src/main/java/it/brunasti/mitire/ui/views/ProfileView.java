@@ -1,5 +1,6 @@
 package it.brunasti.mitire.ui.views;
 
+import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.UpdateOwnProfileRequest;
@@ -15,6 +16,7 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.PermitAll;
@@ -44,6 +46,10 @@ public class ProfileView extends VerticalLayout {
 
         UserDto user = userService.getByUsername(username);
         loadInto(user);
+
+        if (user.role() == Role.ADMIN) {
+            add(new RouterLink("View full user details", UserDetailView.class, user.id()));
+        }
 
         add(new H2("My Profile"), buildProfileForm(), new H2("Change Password"), buildPasswordForm());
     }

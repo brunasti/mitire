@@ -334,7 +334,11 @@ role and group membership are admin-managed), edit your full name/email, and cha
 your own password given the current one. This is a separate, self-service path from
 the admin-only `UserService.updatePassword()` used on the Users pages — it has no
 ADMIN-target restriction, since changing *your own* password is always allowed
-regardless of role (unlike an admin resetting *someone else's*).
+regardless of role (unlike an admin resetting *someone else's*). For an ADMIN viewer
+only, the page also has a "View full user details" link to their own `/users/{id}`
+page (the fuller admin view, with its Time recordings/Groups/Projects/Approver/Owner
+tabs); the link is omitted for everyone else since `/users/{id}` is an ADMIN-only route
+and would otherwise be a dead end.
 
 ## REST API
 
