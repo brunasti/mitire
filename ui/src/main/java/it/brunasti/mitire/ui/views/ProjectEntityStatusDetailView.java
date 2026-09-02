@@ -41,6 +41,7 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
     private final ProjectEntityStatusService projectEntityStatusService;
 
     private final Span statusNameLabel = new Span();
+    private final RouterLink backLink = new RouterLink();
     private final TextField sequence = new TextField("Order");
     private final TextField name = new TextField("Name");
     private final TextField description = new TextField("Description");
@@ -69,9 +70,9 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
         tabSheet.add("Depending statuses", buildChildrenTab());
         tabSheet.setSizeFull();
 
+        backLink.setText("← Back to project");
         statusNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
-        HorizontalLayout header = new HorizontalLayout(
-                new RouterLink("← Back to project", ProjectDetailView.class), statusNameLabel);
+        HorizontalLayout header = new HorizontalLayout(backLink, statusNameLabel);
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
 
         add(header, tabSheet);
@@ -90,6 +91,7 @@ public class ProjectEntityStatusDetailView extends VerticalLayout implements Has
         }
         this.projectId = status.projectId();
         this.startingStatus = status.startingStatus();
+        backLink.setRoute(ProjectDetailView.class, projectId);
         sequence.setValue(String.valueOf(status.sequence()));
         name.setValue(status.name());
         description.setValue(status.description() != null ? status.description() : "");
