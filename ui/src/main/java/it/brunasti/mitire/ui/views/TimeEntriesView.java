@@ -119,6 +119,7 @@ public class TimeEntriesView extends VerticalLayout {
 
     private Grid<TimeEntryDto> buildGrid() {
         grid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true);
+        grid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
         grid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true);
         grid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         grid.addColumn(TimeEntryDto::description).setHeader("Description");

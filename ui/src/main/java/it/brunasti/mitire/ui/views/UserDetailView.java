@@ -143,6 +143,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
 
     private VerticalLayout buildEntriesTab() {
         entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true);
+        entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
         entriesGrid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true);
         entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");

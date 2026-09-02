@@ -272,7 +272,8 @@ next to the "← Back to users" link (kept live after an edit), with four tabs: 
 details** (edit profile, role, groups — a multi-select, since a user can
 belong to any number of groups — enabled status, and — for non-ADMIN users — reset the
 password), **Time recordings** (every time entry logged by that user, across all
-projects), **Groups** (every group the user belongs to — click through to a group's
+projects, with a User column alongside Date/Project for consistency with the other
+Time Entries lists in the app), **Groups** (every group the user belongs to — click through to a group's
 detail page, a picker to link an additional existing group without leaving the tab, and
 a trashcan icon per row to remove that membership — with confirmation), and **Projects**
 (every project the user can currently access — the
@@ -292,7 +293,7 @@ link.
 The home page (`/`) shows a "Time Report System" heading and splits its content into
 two tabs: **Add Time Entry** (the creation form — its Project dropdown only lists your
 accessible projects that are currently active) and **Time Entries** (your own entries,
-sortable by Date and Project).
+with a User column alongside Date and Project, sortable by Date, User, and Project).
 
 `TimeEntryService` enforces two rules on both creation and editing (a `400` with an
 `{"error": "..."}` body otherwise, same as the other bean-validation failures above):
