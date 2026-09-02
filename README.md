@@ -340,6 +340,22 @@ pointing to their own `/users/{id}` page (the fuller admin view, with its Time
 recordings/Groups/Projects/Approver/Owner tabs); the link is omitted for everyone else
 since `/users/{id}` is an ADMIN-only route and would otherwise be a dead end.
 
+## User Manual
+
+A role-oriented user manual — separate from this developer-facing README — lives at
+`ui/src/main/resources/manual/user-manual.md` and is served in the app itself at
+`/manual` (`ManualView`, `@PermitAll`, no `MainLayout` chrome — a standalone reading
+page). It's converted from Markdown to HTML at request time with `commonmark-java`
+and rendered via Vaadin's `Html` component; a `ManualViewSmokeTest` in the `ui`
+module's test suite guards against the Markdown ever failing to render into valid
+HTML. The drawer nav has a "User Manual" link (a plain `Anchor` with
+`target="_blank"`, not a `RouterLink`, specifically so it opens in a new browser tab
+rather than navigating away from whatever page you're on) available to every logged-in
+user regardless of role. The manual itself is organized into four sections — every
+user (logging time entries), Approver, Project Owner (with a full worked example of
+building a workflow from scratch), and Administrator — matching the per-project
+Approver/Owner responsibilities and system-wide ADMIN role described above.
+
 ## REST API
 
 All endpoints require HTTP Basic auth (same users as the UI). Endpoints that create or

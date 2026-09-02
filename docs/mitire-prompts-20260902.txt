@@ -1,0 +1,423 @@
+Mitire project — user prompts log
+Generated: 2026-09-02
+
+NOTE: This file is a cumulative snapshot of every prompt given so far, continuing the
+numbering from docs/mitire-prompts-20260901.txt (which covers Prompts 1-55 and carries
+its own accuracy notes for that range — Prompts 1-11 and 35-55 verbatim/near-verbatim,
+12-34 best-effort reconstructions). Prompts 56-63 below were recovered from an
+automated conversation-summary step (produced when this session's context was
+compacted) that explicitly preserved user messages verbatim, so they should be
+byte-exact or very close to it. Prompts 64-72 are exact verbatim quotes, copied
+directly from live conversation turns still in context at the time of writing.
+
+================================================================================
+Prompt 1
+================================================================================
+Hello Claude!
+
+================================================================================
+Prompt 2
+================================================================================
+Do you want to help me with a new project?
+
+================================================================================
+Prompt 3
+================================================================================
+I would like to build an application, based on Java and Spring Boot, to manage time reports for a team of more people, working on different projects.
+It should have a frontend and a backend, communicating via REST APIs, and I would like the project to be stared in my GitLab account.
+   - Frontend technology: Vaadin
+   - GitLab: Init locally for now
+   - Build tool: Gradle
+   - Vaadin UI (for viewing reports) + REST API (for other modules to submit/query data)
+
+================================================================================
+Prompt 4
+================================================================================
+Could you please change the packaging of the Java code? From com.mitire to it.brunasti.mitire ?
+
+================================================================================
+Prompt 5
+================================================================================
+I would like the mitire application to run as a local system, using the local PostgreSQL ionstance at 5432, not on docker. Could you change it?
+
+================================================================================
+Prompt 6
+================================================================================
+Could not navigate to ''
+Reason: Denied access to view 'TimeEntriesView' due to parent layout 'MainLayout' access rules. Consider adding one of the following annotations to make the parent layout accessible: @AnonymousAllowed, @PermitAll, or @RolesAllowed.
+
+Available routes:
+<root>
+login
+projects
+This detailed message is only shown when running in development mode.
+
+================================================================================
+Prompt 7
+================================================================================
+OK, let's structurate the system... As an user with ADMIN role, I would like to see a menu entry to manage the users, where the structure should be that a user can be part of a group, a group coul have multiple access permissions to different projects, so that a user can hinerit the permissions from the group to access the projects.
+
+================================================================================
+Prompt 8
+================================================================================
+[Pasted terminal output from `./gradlew :ui:bootRun`, run by the user after the MainLayout access-control fix, showing a successful Spring Boot / Vaadin startup log ending in:]
+
+...
+2026-09-01T11:58:04.212+02:00  INFO 71892 --- [mitire] [           main] it.brunasti.mitire.Application           : Starting Application using Java 21.0.7 with PID 71892 (/Users/paolobrunasti/IdeaProjects/mine/mitire/ui/build/classes/java/main started by paolobrunasti in /Users/paolobrunasti/IdeaProjects/mine/mitire/ui)
+...
+2026-09-01T11:58:06.847+02:00  WARN 71892 --- [mitire] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanCreationException: ... FATAL: Postgres.app rejected "trust" authentication
+  Detail: You did not allow java to connect without a password. For more information see https://postgresapp.com/l/app-permissions/
+  Hint: Configure app permissions in Postgres.app settings
+...
+BUILD FAILED in 5s
+8 actionable tasks: 2 executed, 6 up-to-date
+paolobrunasti@Paolos-MacBook-Pro mitire %
+
+(Full log included the Postgres.app "trust" authentication rejection stack trace that led to the pg_hba.conf scoped password-auth fix.)
+
+================================================================================
+Prompt 9
+================================================================================
+A user with ADMIN role should be able to edit the password of a non ADMIN user.
+
+================================================================================
+Prompt 10
+================================================================================
+OK
+
+(In response to being asked for confirmation to stop and restart the locally running app instance on port 8080 in order to test the password-reset feature.)
+
+================================================================================
+Prompt 11
+================================================================================
+could you save into a text file all the prompts I have given you up to now, in a file called mitire-prompts-<today date in yyymmdd format>.txt ?
+
+================================================================================
+Prompt 12
+================================================================================
+In the http://localhost:8080/projects/<id> page, when clicking on a project, a new page with the details of the project should open. In that page there should be 3 tabs: "Project details", "Time Entries", "Users".
+
+================================================================================
+Prompt 13
+================================================================================
+Please always restart the service if port 8080 is in use.
+
+================================================================================
+Prompt 14
+================================================================================
+Could you please, at the end, restart it?
+
+(Asking that the app be left running after testing/verification, instead of being stopped.)
+
+================================================================================
+Prompt 15
+================================================================================
+In the http://localhost:8080/groups page, when clicking on a group, a new page with the details of the group should open, with 3 tabs: "Group details", "Projects", "Users".
+
+================================================================================
+Prompt 16
+================================================================================
+In the http://localhost:8080/users page, when clicking on a user, a new page should open, with four tabs: "User details", "Time recordings" (containing the time entries), "Groups", and "Projects" (the projects this user can access).
+
+================================================================================
+Prompt 17
+================================================================================
+Please enable the navigation from the http://localhost:8080/projects/<id> page to the different users referred in the tab "Users" (to the page http://localhost:8080/users/<user_id>), and the same from http://localhost:8080/groups/<group_id>.
+
+================================================================================
+Prompt 18
+================================================================================
+Please enable even the reverse of the navigations you just added.
+
+================================================================================
+Prompt 19
+================================================================================
+In the http://localhost:8080/groups/<id> page, could you render the projects in the same way it's done in the page http://localhost:8080/users/<id> ?
+
+================================================================================
+Prompt 20
+================================================================================
+In the http://localhost:8080/groups/<id> page, in the Projects tab, please remove the Accessible projects dropdown.
+
+================================================================================
+Prompt 21
+================================================================================
+There is a missing part: each user can be part of multiple groups. So there must be a many-to-many relation between users and groups.
+
+================================================================================
+Prompt 22
+================================================================================
+I added an icon for the application (backend/src/main/resources/mitire-icon.png) — could you use it as the app's logo, shown in the top-left of the web pages next to the burger/drawer toggle, and also as the browser tab's favicon?
+
+================================================================================
+Prompt 23
+================================================================================
+Could you please make it possible in the http://localhost:8080/users/<id> page, tab Groups, to add a new link to an existing Group?
+
+================================================================================
+Prompt 24
+================================================================================
+Good, now do the reverse from Group to User: in http://localhost:8080/groups/<id> enable adding an existing user. Then do the same between Group and Project.
+
+================================================================================
+Prompt 25
+================================================================================
+IN the http://localhost:8080/groups/<id> page, add a tab "Projects", with the links corresponding.
+
+(Clarified via a follow-up question, since the Group page already had a Projects tab — understood and confirmed to mean: add a reciprocal "Groups" tab to the Project detail page.)
+
+================================================================================
+Prompt 26
+================================================================================
+Next to the "Log out" button, please add a button with a User icon that opens a page where the logged-in user can view their own details and change their own password.
+
+================================================================================
+Prompt 27
+================================================================================
+In the http://localhost:8080/groups/<id> page, in the list of the Projects and Users, enable to delete a single row with a trashcan icon in the line, asking for confirmation.
+
+================================================================================
+Prompt 28
+================================================================================
+In the http://localhost:8080/projects/<id> page, in the list of the Groups, enable to delete a single row with a trashcan icon in the line, asking for confirmation.
+
+================================================================================
+Prompt 29
+================================================================================
+In the http://localhost:8080/users/<id> page, in the list of the Groups, enable to delete a single row with a trashcan icon in the line, asking for confirmation.
+
+================================================================================
+Prompt 30
+================================================================================
+In the http://localhost:8080/ page, allow the user to edit the time entries by clicking on them. An editing page should open, where the user can change: Hours and Description. There should be three buttons, Save, Cancel, Delete. The Delete requires a confirmation. Each succesful action would return to the first page.
+
+================================================================================
+Prompt 31
+================================================================================
+IN the http://localhost:8080/projects/<id> page, please add next to the "<- Back to ..." (on the right) the name of the Project itself.
+
+================================================================================
+Prompt 32
+================================================================================
+IN the http://localhost:8080/groups/<id> page, please add next to the "<- Back to ..." (on the right) the name of the Group itself.
+
+================================================================================
+Prompt 33
+================================================================================
+IN the http://localhost:8080/users/<id> page, please add next to the "<- Back to ..." (on the right) the name of the User itself.
+
+================================================================================
+Prompt 34
+================================================================================
+could you save into a text file all the prompts I have given you up to now, in a file called docs/mitire-prompts-<today date in yyymmdd format>.txt ?
+
+================================================================================
+Prompt 35
+================================================================================
+In the http://localhost:8080/projects page, could you:
+1- add a title "Projects" on top of the page, next to the "Mitire" label
+2- Divide the content of the page in two tabs, the first with the list of the Projects, the second with the form to add a new Project
+3- enable the list to be sorted even by the other columns, in particular the Name
+
+================================================================================
+Prompt 36
+================================================================================
+Can you improve the look and feel of the error page that is shown when an user in not autorised to access a page, with something more then the brute message "Could not navigate to 'users'" ?
+
+================================================================================
+Prompt 37
+================================================================================
+In the http://localhost:8080/groups page, could you:
+1- add a title "Groups" on top of the page, next to the "Mitire" label
+2- Divide the content of the page in two tabs, the first with the list of the Groups, the second with the form to add a new Group
+3- enable the list to be sorted even by the other columns, in particular the Name
+4- add in the list, a column with the users of the group, as you have already done for the projects
+
+================================================================================
+Prompt 38
+================================================================================
+In the http://localhost:8080/users page, could you:
+1- add a title "Users" on top of the page, next to the "Mitire" label
+2- Divide the content of the page in two tabs, the first with the list of the Users, the second with the form to add a new User
+
+================================================================================
+Prompt 39
+================================================================================
+3- enable the list to be sorted even by the other columns
+
+================================================================================
+Prompt 40
+================================================================================
+Transform the top left icon into a button, which navigate to the http://localhost:8080/ page when clicked
+
+================================================================================
+Prompt 41
+================================================================================
+To the left of the User prifile icon on the top, can you please put the Name of the logged in User?
+
+================================================================================
+Prompt 42
+================================================================================
+In the home page, could you separate the form for the creation of the time entry and the list of the already created time entries?
+
+================================================================================
+Prompt 43
+================================================================================
+Please switch the position of the "Time Entries" and the "Add Time Entry"?
+
+================================================================================
+Prompt 44
+================================================================================
+Can you change the name "Mitire" into "MiTiRe" ?
+
+================================================================================
+Prompt 45
+================================================================================
+Add a start and an end date to a project
+
+================================================================================
+Prompt 46
+================================================================================
+Add the start and end date to the projects list in the page http://localhost:8080/projects ?
+
+================================================================================
+Prompt 47
+================================================================================
+In the dropdown list of the "Add Time Entry" Project, do not include the Projects which are not active
+
+================================================================================
+Prompt 48
+================================================================================
+Could you reduce the size of the start and end date, to the same size used for the "Add Time Entry"?
+
+================================================================================
+Prompt 49
+================================================================================
+Add a validation on the creation or editing of a time entry:
+- no more then 24 hours per day (checking with the already existing entries)
+- date can't be before the start date of the project or after the end date (if these values are null, then no check is done)
+
+================================================================================
+Prompt 50
+================================================================================
+The warning messages should be a more visible popup, with colour at least orange
+
+================================================================================
+Prompt 51
+================================================================================
+Could you try to reduce the size of the start and end date shown in the http://localhost:8080/projects/<id> page, to the same size used for the "Add Time Entry"?
+
+================================================================================
+Prompt 52
+================================================================================
+In the http://localhost:8080/login page, can you add the icon of the MiTiRe project?
+
+================================================================================
+Prompt 53
+================================================================================
+In the http://localhost:8080/time-entries/<id> page, add the name of the user who created the entry, and enable the navigation from this page to the corresponding project by a click on the project name, and from this page to the user profile by a click on the user name
+
+================================================================================
+Prompt 54
+================================================================================
+IN the http://localhost:8080/projects/<id> page, in the Time Entries list, add the navigation from the row in the list to the detail page http://localhost:8080/time-entries/<entry_id>
+
+================================================================================
+Prompt 55
+================================================================================
+could you save into a text file all the prompts I have given you up to now, in a file called docs/mitire-prompts-<today date in yyymmdd format>.txt ?
+
+================================================================================
+Prompt 56
+================================================================================
+There is an exception when I try to navigate from the project to the status:
+
+[Followed by a mid-turn interruption carrying the full stack trace:]
+There was an exception while trying to navigate to 'statuses/26' with the root cause 'java.lang.IllegalArgumentException: Navigation target 'it.brunasti.mitire.ui.views.ProjectDetailView' requires a parameter.', plus the full BeanCreationException/BeanInstantiationException stack trace.
+
+================================================================================
+Prompt 57
+================================================================================
+Could you start using the hook UserPromptSubmit ?
+
+================================================================================
+Prompt 58
+================================================================================
+Add a special user to the project, defined as teh OWNER, who can edit the workflow of the project.
+Even an ADMIN can do that, but a normal member of the project can not.
+
+================================================================================
+Prompt 59
+================================================================================
+[AskUserQuestion selection] "New minimal owner-facing entry point"
+(Chosen from the options: "Backend only for now (Recommended)", "Open the whole Project detail page to the Owner too", "New minimal owner-facing entry point".)
+
+================================================================================
+Prompt 60
+================================================================================
+Now we must build the workflow. To do that we need a relation table which link a project_entity_status to it's "parent" one, which means that one project_entity_status can be reached only if the entry is in the parent project_entity_status.
+So we need to be able to open a detail page for a project_entity_status, where we can see: the details of the project_entity_status, the list of the depending project_entity_status (those which can be reached from this one).
+
+================================================================================
+Prompt 61
+================================================================================
+Add the parent status (with link) if it exists, in the status detail page
+
+================================================================================
+Prompt 62
+================================================================================
+Add a tab "Owner" in the user detail page with the list of the projects the user is owner.
+Add the name of the project in the http://localhost:8080/project-workflow/<id> page
+In the http://localhost:8080/project-workflow/<id> page, the owner can click on the status and edit it.
+
+================================================================================
+Prompt 63
+================================================================================
+In the http://localhost:8080/projects/<id> page, the Time Entries list should start sorted by time descending.
+In the http://localhost:8080/projects/<id> page, in the Users tab, add a coulmn showing which user, if there is one, is the approver for this project.
+
+================================================================================
+Prompt 64
+================================================================================
+In the http://localhost:8080/projects/<id> page, in the Users tab, add a coulmn showing which user, if there is one, is the owner for this project.
+
+================================================================================
+Prompt 65
+================================================================================
+Add User name in all the list of Time Entries
+
+================================================================================
+Prompt 66
+================================================================================
+In the http://localhost:8080/time-entries/<id> page, show in the Status dropdown, only the current and the next possible statuses.
+
+================================================================================
+Prompt 67
+================================================================================
+Navigate from User Profile to http://localhost:8080/users/<id>
+
+================================================================================
+Prompt 68
+================================================================================
+Move the link to the user detail that you just created at the top of the page
+
+================================================================================
+Prompt 69
+================================================================================
+Could you move it just below the "My Profile" text?
+
+================================================================================
+Prompt 70
+================================================================================
+Check that the max time per day when filling the entity, is per persom per day, not per project per day....
+
+================================================================================
+Prompt 71
+================================================================================
+Create an User Manual, on how to use the application, with different sections for the normal user (who must only fill his/her time reports with the entries), the approver of the project, the owner of the project (with all the needed steps to create the workflow) and the global Admin.
+The manual should be in a Markdown format, visible even from the application via a link in the left menu, which would open the manual in a new page.
+
+================================================================================
+Prompt 72
+================================================================================
+could you save into a text file all the prompts I have given you up to now, in a file called docs/mitire-prompts-<today date in yyymmdd format>.txt ?

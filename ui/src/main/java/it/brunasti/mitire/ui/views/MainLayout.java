@@ -6,6 +6,7 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
@@ -53,9 +54,13 @@ public class MainLayout extends AppLayout {
         header.expand(title);
         addToNavbar(header);
 
+        Anchor manualLink = new Anchor("manual", "User Manual");
+        manualLink.setTarget("_blank");
+
         VerticalLayout nav = new VerticalLayout(
                 new RouterLink("Time entries", TimeEntriesView.class),
-                new RouterLink("My Projects", MyProjectsView.class)
+                new RouterLink("My Projects", MyProjectsView.class),
+                manualLink
         );
         if (isAdmin()) {
             nav.add(

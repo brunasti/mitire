@@ -6,6 +6,7 @@ plugins {
 dependencies {
     implementation(project(":backend"))
     implementation("com.vaadin:vaadin-spring-boot-starter")
+    implementation("org.commonmark:commonmark:0.22.0")
     developmentOnly("com.vaadin:vaadin-dev")
 
     compileOnly("org.projectlombok:lombok")
