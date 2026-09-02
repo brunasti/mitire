@@ -113,13 +113,37 @@ the start date with a `400`.
 
 Clicking a project row on the Projects page opens `/projects/{id}`, showing the
 project's name next to the "← Back to projects" link (kept live after a rename), with
-four tabs: **Project details** (edit name/active status/start date/end date), **Time
+five tabs: **Project details** (edit name/active status/start date/end date), **Time
 Entries** (every entry logged against the project, across all users; clicking a row
 opens that entry's detail page), **Users** (everyone with access to the
 project — group members plus all ADMINs; clicking a row there opens that user's detail
-page), and **Groups** (every group that grants access to this project, a picker to link
+page), **Groups** (every group that grants access to this project, a picker to link
 an additional existing group, and a trashcan icon per row to unlink one — with
-confirmation — the reciprocal of the Projects tab on a group's page).
+confirmation — the reciprocal of the Projects tab on a group's page), and **Statuses**
+(the project's approval workflow — see below).
+
+## Approval status
+
+Each time entry carries a status describing where it is in that **project's**
+approval flow. Unlike the fixed three-value status of earlier versions, the set of
+valid statuses is itself data: the `project_status` table holds an ordered
+(`sequence`) list of named statuses **per project**, managed by ADMIN from the
+**Statuses** tab on a project's detail page — add a status, delete one (blocked with
+a `400` if any time entry still references it), or reorder with the up/down arrows.
+Every project is seeded with `SUBMITTED` → `APPROVED` → `REJECTED` when created
+(`ProjectService.create()` calls `ProjectStatusService.seedDefaultStatuses()`); ADMIN
+is then free to rename, delete, add to, or reorder that list per project.
+
+A new time entry always starts at its project's first (lowest-`sequence`) status.
+Only ADMIN can move an entry to a different status — done from the entry's detail
+page (`/time-entries/{id}`), where the Status field is an editable dropdown of the
+entry's project's statuses for ADMIN, and read-only text for everyone else;
+`TimeEntryService.update()` enforces this server-side (403 for a non-admin attempting
+it) and rejects a status that belongs to a different project (`400`) — statuses
+aren't interchangeable across projects.
+
+*(Planned next: a per-project **Approver** — a user selected from that project's
+members — who can also drive entries through the workflow, instead of only ADMIN.)*
 
 The Groups page (`/groups`) shows a "Groups" heading and splits its content into two
 tabs: **Groups** (the sortable list — Name, Projects and Users columns can all be
@@ -174,18 +198,22 @@ if the project has a start date and/or end date set, the entry's work date can't
 outside that range (no check is done for whichever bound, or both, is left unset).
 
 Clicking a row on the Time Entries tab (your own time entries) opens `/time-entries/{id}`
-to edit it: Hours and Description are the only editable fields (project/date/status are
-shown read-only — creating a new entry for a different project/date is a separate
-action from the home page's form). **Save** persists and returns to `/`; **Cancel**
+to edit it: Hours and Description are always editable; Status is an editable dropdown
+for ADMIN only (see "Approval status" above) and read-only text for everyone else;
+Project and Date are always read-only (creating a new entry for a different
+project/date is a separate action from the home page's form). **Save** persists and
+returns to `/`; **Cancel**
 returns without saving; **Delete** asks for confirmation first, then deletes and
 returns to `/`. Only the entry's own owner can view/edit/delete it — ADMIN bypasses
 this, same as the rest of the access model — enforced in `TimeEntryService`, not just
 hidden in the UI, so `GET`/`PUT`/`DELETE /api/time-entries/{id}` reject a non-owner,
-non-admin caller with 403. The Project and User fields are links: Project always opens
-`/projects/{id}` (ADMIN-only, same as elsewhere — a non-admin viewing their own entry
-hits the "Access denied" page if clicked); User opens `/profile` when it's your own
-entry, or `/users/{id}` (ADMIN-only) when an admin is viewing someone else's — since
-`/profile` always shows the *caller's* own profile and can't target another user.
+non-admin caller with 403. The User field is always a link: `/profile` when it's your
+own entry, or `/users/{id}` (ADMIN-only) when an admin is viewing someone else's —
+since `/profile` always shows the *caller's* own profile and can't target another
+user. The Project field is a link to `/projects/{id}` only for an ADMIN viewer (the
+only role that can reach that ADMIN-only page); for anyone else it's shown as plain
+text, since making it "clickable" for them would only ever lead to the "Access
+denied" page.
 
 ## My Profile
 
@@ -223,9 +251,19 @@ update projects, groups, or users require the ADMIN role.
   authenticated user, no ADMIN role required; these act on the caller's own account
   only, resolved from the request's authentication
 - `GET /api/time-entries?userId=&projectId=&from=&to=`, `POST /api/time-entries`
-- `GET /api/time-entries/{id}`, `PUT /api/time-entries/{id}` (hours/description only),
-  `DELETE /api/time-entries/{id}` — all three restricted to the entry's own owner or
-  an ADMIN (403 otherwise)
+- `GET /api/time-entries/{id}`, `PUT /api/time-entries/{id}` (hours/description always;
+  an optional `statusId` too, but only ADMIN may set one — 403 for anyone else, 400 if
+  it belongs to a different project than the entry's), `DELETE /api/time-entries/{id}`
+  — all three restricted to the entry's own owner or an ADMIN (403 otherwise)
+- `GET /api/projects/{projectId}/statuses` — any authenticated user
+- `POST /api/projects/{projectId}/statuses` (admin) — appends a new status at the end
+  of the project's sequence; 400 on a duplicate name within the project
+- `PUT /api/projects/{projectId}/statuses/{statusId}` (admin) — rename
+- `DELETE /api/projects/{projectId}/statuses/{statusId}` (admin) — 400 if any time
+  entry still references it
+- `PUT /api/projects/{projectId}/statuses/{statusId}/move-up`,
+  `PUT .../move-down` (admin) — swaps `sequence` with the adjacent status; returns the
+  project's updated status list
 
 Every `@Valid @RequestBody` failure across the API returns a proper `400` with an
 `{"error": "..."}` body via an explicit `@ExceptionHandler(MethodArgumentNotValidException.class)`

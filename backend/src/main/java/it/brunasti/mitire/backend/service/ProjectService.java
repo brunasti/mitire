@@ -17,9 +17,11 @@ import java.util.NoSuchElementException;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectStatusService projectStatusService;
 
-    public ProjectService(ProjectRepository projectRepository) {
+    public ProjectService(ProjectRepository projectRepository, ProjectStatusService projectStatusService) {
         this.projectRepository = projectRepository;
+        this.projectStatusService = projectStatusService;
     }
 
     @Transactional(readOnly = true)
@@ -37,7 +39,9 @@ public class ProjectService {
         project.setName(request.name());
         project.setStartDate(request.startDate());
         project.setEndDate(request.endDate());
-        return toDto(projectRepository.save(project));
+        Project saved = projectRepository.save(project);
+        projectStatusService.seedDefaultStatuses(saved);
+        return toDto(saved);
     }
 
     @Transactional(readOnly = true)

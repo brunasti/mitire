@@ -1,7 +1,5 @@
 package it.brunasti.mitire.backend.web.dto;
 
-import it.brunasti.mitire.backend.domain.TimeEntryStatus;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -15,6 +13,7 @@ public record TimeEntryDto(
         LocalDate workDate,
         BigDecimal hours,
         String description,
-        TimeEntryStatus status
+        Long statusId,
+        String statusName
 ) {
 }

@@ -1,6 +1,7 @@
 package it.brunasti.mitire.backend.service;
 
 import it.brunasti.mitire.backend.domain.Project;
+import it.brunasti.mitire.backend.domain.ProjectStatus;
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
 import it.brunasti.mitire.backend.domain.User;
@@ -25,11 +26,14 @@ public class TimeEntryService {
     private final TimeEntryRepository timeEntryRepository;
     private final UserService userService;
     private final ProjectService projectService;
+    private final ProjectStatusService projectStatusService;
 
-    public TimeEntryService(TimeEntryRepository timeEntryRepository, UserService userService, ProjectService projectService) {
+    public TimeEntryService(TimeEntryRepository timeEntryRepository, UserService userService,
+                             ProjectService projectService, ProjectStatusService projectStatusService) {
         this.timeEntryRepository = timeEntryRepository;
         this.userService = userService;
         this.projectService = projectService;
+        this.projectStatusService = projectStatusService;
     }
 
     public TimeEntryDto create(CreateTimeEntryRequest request) {
@@ -50,6 +54,7 @@ public class TimeEntryService {
         entry.setWorkDate(request.workDate());
         entry.setHours(request.hours());
         entry.setDescription(request.description());
+        entry.setStatus(projectStatusService.getDefaultForProject(project.getId()));
 
         return toDto(timeEntryRepository.save(entry));
     }
@@ -64,6 +69,17 @@ public class TimeEntryService {
         validateDailyHours(entry.getUser().getId(), entry.getWorkDate(), request.hours(), entry.getId());
         entry.setHours(request.hours());
         entry.setDescription(request.description());
+        if (request.statusId() != null) {
+            User requester = userService.getReference(requestingUserId);
+            if (requester.getRole() != Role.ADMIN) {
+                throw new AccessDeniedException("Only ADMIN can change the status of a time entry");
+            }
+            ProjectStatus newStatus = projectStatusService.getReference(request.statusId());
+            if (!newStatus.getProject().getId().equals(entry.getProject().getId())) {
+                throw new IllegalArgumentException("Status does not belong to this entry's project");
+            }
+            entry.setStatus(newStatus);
+        }
         return toDto(timeEntryRepository.save(entry));
     }
 
@@ -136,7 +152,8 @@ public class TimeEntryService {
                 entry.getWorkDate(),
                 entry.getHours(),
                 entry.getDescription(),
-                entry.getStatus()
+                entry.getStatus().getId(),
+                entry.getStatus().getName()
         );
     }
 }

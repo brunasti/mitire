@@ -1,14 +1,20 @@
 package it.brunasti.mitire.ui.views;
 
+import it.brunasti.mitire.backend.domain.Role;
+import it.brunasti.mitire.backend.service.ProjectStatusService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
+import it.brunasti.mitire.backend.web.dto.ProjectStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -27,6 +33,7 @@ import jakarta.annotation.security.PermitAll;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Route(value = "time-entries", layout = MainLayout.class)
@@ -35,27 +42,31 @@ import java.util.NoSuchElementException;
 public class TimeEntryDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 
     private final TimeEntryService timeEntryService;
+    private final ProjectStatusService projectStatusService;
     private final Long currentUserId;
+    private final Role currentUserRole;
 
-    private final RouterLink projectLink = new RouterLink();
+    private final Div projectField = new Div();
     private final RouterLink userLink = new RouterLink();
     private final TextField workDate = new TextField("Date");
-    private final TextField status = new TextField("Status");
+    private final Div statusField = new Div();
     private final NumberField hours = new NumberField("Hours");
     private final TextField description = new TextField("Description");
 
+    private ComboBox<ProjectStatusDto> statusComboBox;
     private Long entryId;
 
-    public TimeEntryDetailView(TimeEntryService timeEntryService, UserService userService,
-                                AuthenticationContext authenticationContext) {
+    public TimeEntryDetailView(TimeEntryService timeEntryService, ProjectStatusService projectStatusService,
+                                UserService userService, AuthenticationContext authenticationContext) {
         this.timeEntryService = timeEntryService;
-        this.currentUserId = authenticationContext.getPrincipalName()
+        this.projectStatusService = projectStatusService;
+        var currentUser = authenticationContext.getPrincipalName()
                 .map(userService::getByUsername)
-                .map(u -> u.id())
                 .orElseThrow();
+        this.currentUserId = currentUser.id();
+        this.currentUserRole = currentUser.role();
 
         workDate.setReadOnly(true);
-        status.setReadOnly(true);
         hours.setStep(0.25);
         hours.setMin(0.25);
         hours.setMax(24);
@@ -68,8 +79,12 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         this.entryId = entryId;
         try {
             TimeEntryDto entry = timeEntryService.findByIdForUser(entryId, currentUserId);
-            projectLink.setText(entry.projectCode());
-            projectLink.setRoute(ProjectDetailView.class, entry.projectId());
+            projectField.removeAll();
+            if (currentUserRole == Role.ADMIN) {
+                projectField.add(new RouterLink(entry.projectCode(), ProjectDetailView.class, entry.projectId()));
+            } else {
+                projectField.add(new Span(entry.projectCode()));
+            }
             userLink.setText(entry.userFullName());
             if (entry.userId().equals(currentUserId)) {
                 userLink.setRoute(ProfileView.class);
@@ -77,9 +92,22 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
                 userLink.setRoute(UserDetailView.class, entry.userId());
             }
             workDate.setValue(entry.workDate().toString());
-            status.setValue(entry.status().name());
             hours.setValue(entry.hours().doubleValue());
             description.setValue(entry.description() != null ? entry.description() : "");
+
+            statusField.removeAll();
+            if (currentUserRole == Role.ADMIN) {
+                List<ProjectStatusDto> statuses = projectStatusService.findByProject(entry.projectId());
+                statusComboBox = new ComboBox<>();
+                statusComboBox.setItems(statuses);
+                statusComboBox.setItemLabelGenerator(ProjectStatusDto::name);
+                statuses.stream().filter(s -> s.id().equals(entry.statusId())).findFirst()
+                        .ifPresent(statusComboBox::setValue);
+                statusField.add(statusComboBox);
+            } else {
+                statusComboBox = null;
+                statusField.add(new Span(entry.statusName()));
+            }
         } catch (NoSuchElementException | AccessDeniedException ex) {
             event.rerouteToError(NotFoundException.class, "Time entry not found");
         }
@@ -95,9 +123,10 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
 
         FormLayout form = new FormLayout();
-        form.addFormItem(projectLink, "Project");
+        form.addFormItem(projectField, "Project");
         form.addFormItem(userLink, "User");
-        form.add(workDate, status, hours, description);
+        form.addFormItem(statusField, "Status");
+        form.add(workDate, hours, description);
         form.add(new HorizontalLayout(save, cancel, delete));
         form.setMaxWidth("600px");
         return form;
@@ -108,9 +137,12 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
             Notifications.showError("Hours is required");
             return;
         }
+        Long statusId = statusComboBox != null && statusComboBox.getValue() != null
+                ? statusComboBox.getValue().id()
+                : null;
         try {
             timeEntryService.update(entryId, currentUserId,
-                    new UpdateTimeEntryRequest(BigDecimal.valueOf(hours.getValue()), description.getValue()));
+                    new UpdateTimeEntryRequest(BigDecimal.valueOf(hours.getValue()), description.getValue(), statusId));
             Notification.show("Time entry updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             goBack();
         } catch (IllegalArgumentException | AccessDeniedException ex) {

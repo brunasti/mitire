@@ -2,10 +2,13 @@ package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.service.GroupService;
 import it.brunasti.mitire.backend.service.ProjectService;
+import it.brunasti.mitire.backend.service.ProjectStatusService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
+import it.brunasti.mitire.backend.web.dto.CreateProjectStatusRequest;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
+import it.brunasti.mitire.backend.web.dto.ProjectStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
@@ -49,6 +52,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final TimeEntryService timeEntryService;
     private final UserService userService;
     private final GroupService groupService;
+    private final ProjectStatusService projectStatusService;
 
     private final TextField code = new TextField("Code");
     private final TextField name = new TextField("Name");
@@ -61,6 +65,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
+    private final Grid<ProjectStatusDto> statusesGrid = new Grid<>(ProjectStatusDto.class, false);
 
     private Grid.Column<GroupDto> groupActionsColumn;
 
@@ -68,11 +73,13 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private Long projectId;
 
     public ProjectDetailView(ProjectService projectService, TimeEntryService timeEntryService,
-                              UserService userService, GroupService groupService) {
+                              UserService userService, GroupService groupService,
+                              ProjectStatusService projectStatusService) {
         this.projectService = projectService;
         this.timeEntryService = timeEntryService;
         this.userService = userService;
         this.groupService = groupService;
+        this.projectStatusService = projectStatusService;
 
         setSizeFull();
 
@@ -87,6 +94,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         tabSheet.add("Time Entries", buildEntriesTab());
         tabSheet.add("Users", buildUsersTab());
         tabSheet.add("Groups", buildGroupsTab());
+        tabSheet.add("Statuses", buildStatusesTab());
         tabSheet.setSizeFull();
 
         projectNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
@@ -115,6 +123,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         entriesGrid.setItems(timeEntryService.search(null, projectId, null, null));
         usersGrid.setItems(userService.findByProjectAccess(projectId));
         refreshGroups();
+        refreshStatuses();
     }
 
     private FormLayout buildDetailsTab() {
@@ -143,7 +152,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
         entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
-        entriesGrid.addColumn(TimeEntryDto::status).setHeader("Status");
+        entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
         entriesGrid.setSizeFull();
         entriesGrid.getStyle().set("cursor", "pointer");
         entriesGrid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));
@@ -234,5 +243,86 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         groupsGrid.setItems(linkedGroups);
         addGroup.clear();
         addGroup.setItems(allGroups.stream().filter(g -> !linkedGroups.contains(g)).toList());
+    }
+
+    private VerticalLayout buildStatusesTab() {
+        TextField newStatusName = new TextField("Name");
+        Button add = new Button("Add", e -> addStatus(newStatusName));
+        HorizontalLayout addForm = new HorizontalLayout(newStatusName, add);
+        addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
+
+        statusesGrid.addColumn(ProjectStatusDto::sequence).setHeader("Order");
+        statusesGrid.addColumn(ProjectStatusDto::name).setHeader("Name");
+        statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
+        statusesGrid.setSizeFull();
+
+        VerticalLayout layout = new VerticalLayout(addForm, statusesGrid);
+        layout.setSizeFull();
+        return layout;
+    }
+
+    private void addStatus(TextField newStatusName) {
+        if (newStatusName.getValue().isBlank()) {
+            Notifications.showError("Name is required");
+            return;
+        }
+        try {
+            projectStatusService.create(projectId, new CreateProjectStatusRequest(newStatusName.getValue()));
+            newStatusName.clear();
+            refreshStatuses();
+            Notification.show("Status added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        } catch (IllegalArgumentException ex) {
+            Notifications.showError(ex.getMessage());
+        }
+    }
+
+    private HorizontalLayout buildStatusActions(ProjectStatusDto status) {
+        Button up = new Button(VaadinIcon.ARROW_UP.create());
+        up.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
+        up.setTooltipText("Move up");
+        up.addClickListener(e -> {
+            projectStatusService.moveUp(projectId, status.id());
+            refreshStatuses();
+        });
+
+        Button down = new Button(VaadinIcon.ARROW_DOWN.create());
+        down.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
+        down.setTooltipText("Move down");
+        down.addClickListener(e -> {
+            projectStatusService.moveDown(projectId, status.id());
+            refreshStatuses();
+        });
+
+        Button delete = new Button(VaadinIcon.TRASH.create());
+        delete.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_ERROR);
+        delete.setTooltipText("Delete status");
+        delete.addClickListener(e -> confirmDeleteStatus(status));
+
+        return new HorizontalLayout(up, down, delete);
+    }
+
+    private void confirmDeleteStatus(ProjectStatusDto status) {
+        ConfirmDialog dialog = new ConfirmDialog(
+                "Delete status",
+                "Delete status '" + status.name() + "'? This can't be undone.",
+                "Delete", e -> deleteStatus(status),
+                "Cancel", e -> { }
+        );
+        dialog.setConfirmButtonTheme("error primary");
+        dialog.open();
+    }
+
+    private void deleteStatus(ProjectStatusDto status) {
+        try {
+            projectStatusService.delete(projectId, status.id());
+            refreshStatuses();
+            Notification.show("Status deleted").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        } catch (IllegalArgumentException ex) {
+            Notifications.showError(ex.getMessage());
+        }
+    }
+
+    private void refreshStatuses() {
+        statusesGrid.setItems(projectStatusService.findByProject(projectId));
     }
 }

@@ -36,9 +36,9 @@ public class TimeEntry {
 
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TimeEntryStatus status = TimeEntryStatus.SUBMITTED;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "status_id", nullable = false)
+    private ProjectStatus status;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();

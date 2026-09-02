@@ -122,7 +122,7 @@ public class TimeEntriesView extends VerticalLayout {
         grid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true);
         grid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         grid.addColumn(TimeEntryDto::description).setHeader("Description");
-        grid.addColumn(TimeEntryDto::status).setHeader("Status");
+        grid.addColumn(TimeEntryDto::statusName).setHeader("Status");
         grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));

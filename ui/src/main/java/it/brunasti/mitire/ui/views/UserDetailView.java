@@ -138,7 +138,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         entriesGrid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true);
         entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
-        entriesGrid.addColumn(TimeEntryDto::status).setHeader("Status");
+        entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
         entriesGrid.setSizeFull();
 
         VerticalLayout layout = new VerticalLayout(entriesGrid);

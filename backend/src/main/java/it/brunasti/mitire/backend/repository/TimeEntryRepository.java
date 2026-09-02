@@ -10,4 +10,6 @@ import java.util.List;
 public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long>, JpaSpecificationExecutor<TimeEntry> {
 
     List<TimeEntry> findByUserIdAndWorkDate(Long userId, LocalDate workDate);
+
+    boolean existsByStatusId(Long statusId);
 }

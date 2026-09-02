@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 
 public record UpdateTimeEntryRequest(
         @NotNull @DecimalMin("0.25") @DecimalMax("24.0") BigDecimal hours,
-        String description
+        String description,
+        Long statusId
 ) {
 }
