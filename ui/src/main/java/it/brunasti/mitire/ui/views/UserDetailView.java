@@ -2,6 +2,7 @@ package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.service.GroupService;
+import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
@@ -49,6 +50,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
 
     private final UserService userService;
     private final TimeEntryService timeEntryService;
+    private final ProjectService projectService;
 
     private final Span userNameLabel = new Span();
     private final TextField username = new TextField("Username");
@@ -63,6 +65,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
     private final Grid<ProjectDto> projectsGrid = new Grid<>(ProjectDto.class, false);
+    private final Grid<ProjectDto> approverGrid = new Grid<>(ProjectDto.class, false);
 
     private Grid.Column<GroupDto> groupActionsColumn;
 
@@ -70,9 +73,11 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     private Long userId;
     private Role currentRole;
 
-    public UserDetailView(UserService userService, GroupService groupService, TimeEntryService timeEntryService) {
+    public UserDetailView(UserService userService, GroupService groupService, TimeEntryService timeEntryService,
+                           ProjectService projectService) {
         this.userService = userService;
         this.timeEntryService = timeEntryService;
+        this.projectService = projectService;
 
         setSizeFull();
 
@@ -88,6 +93,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         tabSheet.add("Time recordings", buildEntriesTab());
         tabSheet.add("Groups", buildGroupsTab());
         tabSheet.add("Projects", buildProjectsTab());
+        tabSheet.add("Approver", buildApproverTab());
         tabSheet.setSizeFull();
 
         userNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
@@ -221,6 +227,19 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         return layout;
     }
 
+    private VerticalLayout buildApproverTab() {
+        approverGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        approverGrid.addColumn(ProjectDto::name).setHeader("Name");
+        approverGrid.addColumn(ProjectDto::active).setHeader("Active");
+        approverGrid.setSizeFull();
+        approverGrid.getStyle().set("cursor", "pointer");
+        approverGrid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
+
+        VerticalLayout layout = new VerticalLayout(approverGrid);
+        layout.setSizeFull();
+        return layout;
+    }
+
     private void save() {
         if (fullName.getValue().isBlank() || email.getValue().isBlank() || role.getValue() == null) {
             Notifications.showError("Full name, email and role are required");
@@ -248,6 +267,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         groupsGrid.setItems(user.groups());
         addGroup.setItems(allGroups.stream().filter(g -> !user.groups().contains(g)).toList());
         projectsGrid.setItems(userService.findAccessibleProjects(userId));
+        approverGrid.setItems(projectService.findByApprover(userId));
     }
 
     private void updatePasswordFieldState() {

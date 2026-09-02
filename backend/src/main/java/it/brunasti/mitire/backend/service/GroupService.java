@@ -2,6 +2,7 @@ package it.brunasti.mitire.backend.service;
 
 import it.brunasti.mitire.backend.domain.Group;
 import it.brunasti.mitire.backend.domain.Project;
+import it.brunasti.mitire.backend.domain.User;
 import it.brunasti.mitire.backend.repository.GroupRepository;
 import it.brunasti.mitire.backend.repository.ProjectRepository;
 import it.brunasti.mitire.backend.web.dto.CreateGroupRequest;
@@ -110,7 +111,10 @@ public class GroupService {
     }
 
     private ProjectDto toProjectDto(Project project) {
+        User approver = project.getApprover();
         return new ProjectDto(project.getId(), project.getCode(), project.getName(), project.isActive(),
-                project.getStartDate(), project.getEndDate());
+                project.getStartDate(), project.getEndDate(),
+                approver != null ? approver.getId() : null,
+                approver != null ? approver.getFullName() : null);
     }
 }

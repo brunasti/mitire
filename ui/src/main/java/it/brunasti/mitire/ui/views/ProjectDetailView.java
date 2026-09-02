@@ -2,14 +2,15 @@ package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.service.GroupService;
 import it.brunasti.mitire.backend.service.ProjectService;
-import it.brunasti.mitire.backend.service.ProjectStatusService;
+import it.brunasti.mitire.backend.service.ProjectEntityStatusService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
-import it.brunasti.mitire.backend.web.dto.CreateProjectStatusRequest;
+import it.brunasti.mitire.backend.web.dto.CreateProjectEntityStatusRequest;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
-import it.brunasti.mitire.backend.web.dto.ProjectStatusDto;
+import it.brunasti.mitire.backend.web.dto.ProjectEntityStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.UpdateProjectEntityStatusRequest;
 import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.UI;
@@ -19,9 +20,11 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -52,39 +55,43 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final TimeEntryService timeEntryService;
     private final UserService userService;
     private final GroupService groupService;
-    private final ProjectStatusService projectStatusService;
+    private final ProjectEntityStatusService projectEntityStatusService;
 
     private final TextField code = new TextField("Code");
     private final TextField name = new TextField("Name");
     private final Checkbox active = new Checkbox("Active");
     private final DatePicker startDate = new DatePicker("Start date");
     private final DatePicker endDate = new DatePicker("End date");
+    private final ComboBox<UserDto> approver = new ComboBox<>("Approver");
     private final ComboBox<GroupDto> addGroup = new ComboBox<>("Add group");
     private final Span projectNameLabel = new Span();
 
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
-    private final Grid<ProjectStatusDto> statusesGrid = new Grid<>(ProjectStatusDto.class, false);
+    private final Grid<ProjectEntityStatusDto> statusesGrid = new Grid<>(ProjectEntityStatusDto.class, false);
 
     private Grid.Column<GroupDto> groupActionsColumn;
+    private Grid.Column<ProjectEntityStatusDto> statusActionsColumn;
 
     private List<GroupDto> allGroups;
     private Long projectId;
 
     public ProjectDetailView(ProjectService projectService, TimeEntryService timeEntryService,
                               UserService userService, GroupService groupService,
-                              ProjectStatusService projectStatusService) {
+                              ProjectEntityStatusService projectEntityStatusService) {
         this.projectService = projectService;
         this.timeEntryService = timeEntryService;
         this.userService = userService;
         this.groupService = groupService;
-        this.projectStatusService = projectStatusService;
+        this.projectEntityStatusService = projectEntityStatusService;
 
         setSizeFull();
 
         startDate.setWidth("160px");
         endDate.setWidth("160px");
+        approver.setItemLabelGenerator(UserDto::fullName);
+        approver.setClearButtonVisible(true);
 
         allGroups = groupService.findAll();
         addGroup.setItemLabelGenerator(GroupDto::name);
@@ -108,8 +115,9 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     @Override
     public void setParameter(BeforeEvent event, Long projectId) {
         this.projectId = projectId;
+        ProjectDto project;
         try {
-            ProjectDto project = projectService.findById(projectId);
+            project = projectService.findById(projectId);
             code.setValue(project.code());
             name.setValue(project.name());
             active.setValue(project.active());
@@ -121,7 +129,14 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             return;
         }
         entriesGrid.setItems(timeEntryService.search(null, projectId, null, null));
-        usersGrid.setItems(userService.findByProjectAccess(projectId));
+        List<UserDto> projectUsers = userService.findByProjectAccess(projectId);
+        usersGrid.setItems(projectUsers);
+        approver.setItems(projectUsers);
+        approver.clear();
+        Long approverId = project.approverId();
+        if (approverId != null) {
+            projectUsers.stream().filter(u -> u.id().equals(approverId)).findFirst().ifPresent(approver::setValue);
+        }
         refreshGroups();
         refreshStatuses();
     }
@@ -131,8 +146,9 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
         Button save = new Button("Save", e -> {
             try {
+                Long approverId = approver.getValue() != null ? approver.getValue().id() : null;
                 ProjectDto updated = projectService.update(projectId, new UpdateProjectRequest(
-                        name.getValue(), active.getValue(), startDate.getValue(), endDate.getValue()));
+                        name.getValue(), active.getValue(), startDate.getValue(), endDate.getValue(), approverId));
                 projectNameLabel.setText(updated.name());
                 Notification.show("Project updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (IllegalArgumentException ex) {
@@ -142,7 +158,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
         HorizontalLayout startAndEndDate = new HorizontalLayout(startDate, endDate);
 
-        FormLayout form = new FormLayout(code, name, active, startAndEndDate, save);
+        FormLayout form = new FormLayout(code, name, active, startAndEndDate, approver, save);
         form.setMaxWidth("600px");
         return form;
     }
@@ -208,7 +224,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         }
         groupService.addProject(selected.id(), projectId);
         refreshGroups();
-        usersGrid.setItems(userService.findByProjectAccess(projectId));
+        refreshProjectUsers();
         Notification.show("Group added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
@@ -234,7 +250,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private void removeGroup(GroupDto group) {
         groupService.removeProject(group.id(), projectId);
         refreshGroups();
-        usersGrid.setItems(userService.findByProjectAccess(projectId));
+        refreshProjectUsers();
         Notification.show("Group removed from project").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
@@ -245,30 +261,53 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         addGroup.setItems(allGroups.stream().filter(g -> !linkedGroups.contains(g)).toList());
     }
 
+    private void refreshProjectUsers() {
+        List<UserDto> projectUsers = userService.findByProjectAccess(projectId);
+        usersGrid.setItems(projectUsers);
+        UserDto currentApprover = approver.getValue();
+        approver.setItems(projectUsers);
+        if (currentApprover != null) {
+            projectUsers.stream().filter(u -> u.id().equals(currentApprover.id())).findFirst()
+                    .ifPresentOrElse(approver::setValue, approver::clear);
+        }
+    }
+
     private VerticalLayout buildStatusesTab() {
         TextField newStatusName = new TextField("Name");
-        Button add = new Button("Add", e -> addStatus(newStatusName));
-        HorizontalLayout addForm = new HorizontalLayout(newStatusName, add);
+        TextField newStatusDescription = new TextField("Description");
+        Button add = new Button("Add", e -> addStatus(newStatusName, newStatusDescription));
+        HorizontalLayout addForm = new HorizontalLayout(newStatusName, newStatusDescription, add);
         addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
 
-        statusesGrid.addColumn(ProjectStatusDto::sequence).setHeader("Order");
-        statusesGrid.addColumn(ProjectStatusDto::name).setHeader("Name");
-        statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
+        statusesGrid.addColumn(ProjectEntityStatusDto::sequence).setHeader("Order");
+        statusesGrid.addColumn(ProjectEntityStatusDto::name).setHeader("Name");
+        statusesGrid.addColumn(ProjectEntityStatusDto::description).setHeader("Description");
+        statusesGrid.addColumn(ProjectEntityStatusDto::active).setHeader("Active");
+        statusesGrid.addColumn(ProjectEntityStatusDto::startingStatus).setHeader("Starting");
+        statusActionsColumn = statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
         statusesGrid.setSizeFull();
+        statusesGrid.getStyle().set("cursor", "pointer");
+        statusesGrid.addItemClickListener(e -> {
+            if (e.getColumn() != statusActionsColumn) {
+                UI.getCurrent().navigate(ProjectEntityStatusDetailView.class, e.getItem().id());
+            }
+        });
 
         VerticalLayout layout = new VerticalLayout(addForm, statusesGrid);
         layout.setSizeFull();
         return layout;
     }
 
-    private void addStatus(TextField newStatusName) {
+    private void addStatus(TextField newStatusName, TextField newStatusDescription) {
         if (newStatusName.getValue().isBlank()) {
             Notifications.showError("Name is required");
             return;
         }
         try {
-            projectStatusService.create(projectId, new CreateProjectStatusRequest(newStatusName.getValue()));
+            projectEntityStatusService.create(projectId,
+                    new CreateProjectEntityStatusRequest(newStatusName.getValue(), newStatusDescription.getValue()));
             newStatusName.clear();
+            newStatusDescription.clear();
             refreshStatuses();
             Notification.show("Status added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
@@ -276,12 +315,12 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         }
     }
 
-    private HorizontalLayout buildStatusActions(ProjectStatusDto status) {
+    private HorizontalLayout buildStatusActions(ProjectEntityStatusDto status) {
         Button up = new Button(VaadinIcon.ARROW_UP.create());
         up.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
         up.setTooltipText("Move up");
         up.addClickListener(e -> {
-            projectStatusService.moveUp(projectId, status.id());
+            projectEntityStatusService.moveUp(projectId, status.id());
             refreshStatuses();
         });
 
@@ -289,19 +328,72 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         down.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
         down.setTooltipText("Move down");
         down.addClickListener(e -> {
-            projectStatusService.moveDown(projectId, status.id());
+            projectEntityStatusService.moveDown(projectId, status.id());
             refreshStatuses();
         });
+
+        Button edit = new Button(VaadinIcon.EDIT.create());
+        edit.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
+        edit.setTooltipText("Edit status");
+        edit.addClickListener(e -> openEditStatusDialog(status));
 
         Button delete = new Button(VaadinIcon.TRASH.create());
         delete.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_ERROR);
         delete.setTooltipText("Delete status");
         delete.addClickListener(e -> confirmDeleteStatus(status));
 
-        return new HorizontalLayout(up, down, delete);
+        HorizontalLayout actions = new HorizontalLayout(up, down, edit, delete);
+
+        if (status.startingStatus()) {
+            Icon starringIcon = VaadinIcon.STAR.create();
+            starringIcon.setColor("var(--lumo-primary-color)");
+            starringIcon.setTooltipText("This is the starting status");
+            actions.addComponentAsFirst(starringIcon);
+        } else {
+            Button setStarting = new Button(VaadinIcon.STAR_O.create());
+            setStarting.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
+            setStarting.setTooltipText("Set as starting status");
+            setStarting.addClickListener(e -> {
+                projectEntityStatusService.setStarting(projectId, status.id());
+                refreshStatuses();
+            });
+            actions.addComponentAsFirst(setStarting);
+        }
+
+        return actions;
     }
 
-    private void confirmDeleteStatus(ProjectStatusDto status) {
+    private void openEditStatusDialog(ProjectEntityStatusDto status) {
+        TextField editName = new TextField("Name");
+        editName.setValue(status.name());
+        TextField editDescription = new TextField("Description");
+        editDescription.setValue(status.description() != null ? status.description() : "");
+        Checkbox editActive = new Checkbox("Active");
+        editActive.setValue(status.active());
+
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Edit status");
+
+        Button save = new Button("Save", e -> {
+            try {
+                projectEntityStatusService.update(projectId, status.id(), new UpdateProjectEntityStatusRequest(
+                        editName.getValue(), editDescription.getValue(), editActive.getValue()));
+                refreshStatuses();
+                dialog.close();
+                Notification.show("Status updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } catch (IllegalArgumentException ex) {
+                Notifications.showError(ex.getMessage());
+            }
+        });
+        save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        Button cancel = new Button("Cancel", e -> dialog.close());
+
+        dialog.add(new FormLayout(editName, editDescription, editActive));
+        dialog.getFooter().add(cancel, save);
+        dialog.open();
+    }
+
+    private void confirmDeleteStatus(ProjectEntityStatusDto status) {
         ConfirmDialog dialog = new ConfirmDialog(
                 "Delete status",
                 "Delete status '" + status.name() + "'? This can't be undone.",
@@ -312,9 +404,9 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         dialog.open();
     }
 
-    private void deleteStatus(ProjectStatusDto status) {
+    private void deleteStatus(ProjectEntityStatusDto status) {
         try {
-            projectStatusService.delete(projectId, status.id());
+            projectEntityStatusService.delete(projectId, status.id());
             refreshStatuses();
             Notification.show("Status deleted").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
@@ -323,6 +415,6 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     }
 
     private void refreshStatuses() {
-        statusesGrid.setItems(projectStatusService.findByProject(projectId));
+        statusesGrid.setItems(projectEntityStatusService.findByProject(projectId));
     }
 }

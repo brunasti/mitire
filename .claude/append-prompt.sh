@@ -1,7 +1,7 @@
 #!/bin/bash
 # Called by Claude Code UserPromptSubmit hook.
 # Reads the hook JSON payload from stdin, extracts the prompt, and appends it
-# with a timestamp to docs/octa-rep-sys-prompts.md.
+# with a timestamp to docs/mitire-prompts.md.
 
 PROMPT=$(cat | jq -r '.prompt // empty' 2>/dev/null)
 

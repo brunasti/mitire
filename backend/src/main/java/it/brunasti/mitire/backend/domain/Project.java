@@ -32,4 +32,8 @@ public class Project {
 
     @Column(name = "end_date")
     private LocalDate endDate;
+
+    @ManyToOne
+    @JoinColumn(name = "approver_id")
+    private User approver;
 }

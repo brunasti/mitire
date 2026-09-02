@@ -6,11 +6,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "project_status")
+@Table(name = "project_entity_status")
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProjectStatus {
+public class ProjectEntityStatus {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,4 +25,13 @@ public class ProjectStatus {
 
     @Column(nullable = false)
     private int sequence;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(name = "starting_status", nullable = false)
+    private boolean startingStatus = false;
+
+    @Column(columnDefinition = "text")
+    private String description;
 }

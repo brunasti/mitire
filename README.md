@@ -113,12 +113,12 @@ the start date with a `400`.
 
 Clicking a project row on the Projects page opens `/projects/{id}`, showing the
 project's name next to the "← Back to projects" link (kept live after a rename), with
-five tabs: **Project details** (edit name/active status/start date/end date), **Time
-Entries** (every entry logged against the project, across all users; clicking a row
-opens that entry's detail page), **Users** (everyone with access to the
-project — group members plus all ADMINs; clicking a row there opens that user's detail
-page), **Groups** (every group that grants access to this project, a picker to link
-an additional existing group, and a trashcan icon per row to unlink one — with
+five tabs: **Project details** (edit name/active status/start date/end date/approver —
+see below), **Time Entries** (every entry logged against the project, across all
+users; clicking a row opens that entry's detail page), **Users** (everyone with access
+to the project — group members plus all ADMINs; clicking a row there opens that user's
+detail page), **Groups** (every group that grants access to this project, a picker to
+link an additional existing group, and a trashcan icon per row to unlink one — with
 confirmation — the reciprocal of the Projects tab on a group's page), and **Statuses**
 (the project's approval workflow — see below).
 
@@ -126,24 +126,81 @@ confirmation — the reciprocal of the Projects tab on a group's page), and **St
 
 Each time entry carries a status describing where it is in that **project's**
 approval flow. Unlike the fixed three-value status of earlier versions, the set of
-valid statuses is itself data: the `project_status` table holds an ordered
-(`sequence`) list of named statuses **per project**, managed by ADMIN from the
-**Statuses** tab on a project's detail page — add a status, delete one (blocked with
-a `400` if any time entry still references it), or reorder with the up/down arrows.
-Every project is seeded with `SUBMITTED` → `APPROVED` → `REJECTED` when created
-(`ProjectService.create()` calls `ProjectStatusService.seedDefaultStatuses()`); ADMIN
-is then free to rename, delete, add to, or reorder that list per project.
+valid statuses is itself data: the `project_entity_status` table holds an ordered
+(`sequence`) list of named statuses **per project**, each with its own `active` flag,
+`description`, and a `starting_status` flag, managed by ADMIN from the **Statuses**
+tab on a project's detail page:
 
-A new time entry always starts at its project's first (lowest-`sequence`) status.
-Only ADMIN can move an entry to a different status — done from the entry's detail
-page (`/time-entries/{id}`), where the Status field is an editable dropdown of the
-entry's project's statuses for ADMIN, and read-only text for everyone else;
-`TimeEntryService.update()` enforces this server-side (403 for a non-admin attempting
-it) and rejects a status that belongs to a different project (`400`) — statuses
-aren't interchangeable across projects.
+- **Add** (name + optional description; always created active, never starting)
+- **Edit** (pencil icon) — a dialog to rename, change the description, or toggle
+  active
+- **Delete** (trashcan, with confirmation) — blocked with a `400` if the status is
+  in use by any time entry, or if it's the project's starting status (set another
+  status as starting first)
+- **Reorder** with the up/down arrows (swaps `sequence` with the adjacent status)
+- **Set as starting** (star icon) — exactly one status per project is the starting
+  one at any time; setting a new one automatically un-sets the previous one
+  (`ProjectEntityStatusService.setStarting()`)
 
-*(Planned next: a per-project **Approver** — a user selected from that project's
-members — who can also drive entries through the workflow, instead of only ADMIN.)*
+Every project is seeded with `SUBMITTED` (starting) → `APPROVED` → `REJECTED`, all
+active, when created (`ProjectService.create()` calls
+`ProjectEntityStatusService.seedDefaultStatuses()`).
+
+A new time entry always starts at its project's **starting** status (not merely the
+lowest-`sequence` one — the two can now diverge once ADMIN reassigns starting to a
+different status). Currently only ADMIN can move an entry to a different status —
+done from the entry's detail page (`/time-entries/{id}`), where the Status field is
+an editable dropdown of the entry's project's **active** statuses for ADMIN (an
+already-assigned inactive status stays visible/selected even though new selections of
+it are hidden), and read-only text for everyone else; `TimeEntryService.update()`
+enforces the ADMIN-only rule server-side (403 for a non-admin attempting it) and
+rejects a status that belongs to a different project (`400`) — statuses aren't
+interchangeable across projects. (The per-project Approver below is a prerequisite
+for eventually letting someone other than ADMIN drive this workflow — that
+authorization change hasn't been wired in yet.)
+
+### Workflow (which status can follow which)
+
+The `project_entity_status_transition` table records, for a given status, which other
+statuses of the *same project* can be reached from it — a directed edge from a
+"parent" status to a "depending" (child) status. This is the workflow graph itself,
+separate from the flat status list: a status can have any number of depending
+statuses, and (via separate transition rows) could itself be reachable from more than
+one parent, so it's a general graph, not necessarily a simple tree — nothing in
+`ProjectEntityStatusService` assumes otherwise (no cycle detection, no single-parent
+constraint), since none was asked for.
+
+Clicking a status row on a project's **Statuses** tab now opens `/statuses/{id}`, with
+two tabs:
+
+- **Status details** — Order (read-only), Name, Description, Active, and the starting
+  indicator/action (a star, or a button to make this the starting status — the same
+  action available from the Statuses tab's own list); **Save** and **Delete** (with
+  confirmation; same server-side rules as deleting from the list — blocked if it's the
+  starting status or if any time entry references it)
+- **Depending statuses** — every status directly reachable from this one, a picker to
+  link another of the project's statuses (excluding itself and ones already linked),
+  and a trashcan icon per row to unlink (with confirmation); clicking a row navigates
+  to *that* status's own detail page, so the graph can be browsed depending-status by
+  depending-status
+
+Deleting a status cascades at the database level to remove any transition row
+involving it, on either side — no orphaned rows possible. Linking/unlinking is
+ADMIN-only and idempotent (linking an already-linked pair, or unlinking a pair that
+isn't linked, succeeds as a no-op, matching every other relationship in this app);
+linking rejects a self-loop or a status from a different project (`400`/`404`).
+
+### Approver
+
+Each project optionally has one **Approver** — a single user, set from the
+**Project details** tab's "Approver" dropdown, whose candidates are exactly the
+project's own accessible users (the same set shown on the project's Users tab: group
+members plus all ADMINs). `ProjectService.update()` rejects (`400`) an `approverId`
+that isn't one of those users — an approver must actually have a stake in the
+project. The dropdown has a clear button, since a project need not have an approver
+assigned. The reverse view lives on the user's own page: `/users/{id}`'s **Approver**
+tab lists every project that user is the designated approver of (clicking a row opens
+that project's detail page) — backed by `GET /api/projects?approverId=`.
 
 The Groups page (`/groups`) shows a "Groups" heading and splits its content into two
 tabs: **Groups** (the sortable list — Name, Projects and Users columns can all be
@@ -230,7 +287,10 @@ regardless of role (unlike an admin resetting *someone else's*).
 All endpoints require HTTP Basic auth (same users as the UI). Endpoints that create or
 update projects, groups, or users require the ADMIN role.
 
-- `GET /api/projects`, `GET /api/projects/{id}`, `POST /api/projects` (admin), `PUT /api/projects/{id}` (admin)
+- `GET /api/projects` (optionally `?approverId=` for projects a user is the approver
+  of), `GET /api/projects/{id}`, `POST /api/projects` (admin), `PUT /api/projects/{id}`
+  (admin) — the update body's `approverId` must belong to a user with access to the
+  project (`400` otherwise)
 - `GET /api/groups` (optionally `?projectId=` for groups granting access to a project),
   `GET /api/groups/{id}`, `POST /api/groups` (admin), `PUT /api/groups/{id}` (admin)
 - `PUT /api/groups/{id}/projects/{projectId}` (admin) — links an existing project to
@@ -256,14 +316,27 @@ update projects, groups, or users require the ADMIN role.
   it belongs to a different project than the entry's), `DELETE /api/time-entries/{id}`
   — all three restricted to the entry's own owner or an ADMIN (403 otherwise)
 - `GET /api/projects/{projectId}/statuses` — any authenticated user
-- `POST /api/projects/{projectId}/statuses` (admin) — appends a new status at the end
-  of the project's sequence; 400 on a duplicate name within the project
-- `PUT /api/projects/{projectId}/statuses/{statusId}` (admin) — rename
-- `DELETE /api/projects/{projectId}/statuses/{statusId}` (admin) — 400 if any time
-  entry still references it
+- `GET /api/projects/{projectId}/statuses/{statusId}` — any authenticated user
+- `POST /api/projects/{projectId}/statuses` (admin) — body: name + optional
+  description; appends at the end of the project's sequence, active, not starting;
+  400 on a duplicate name within the project
+- `PUT /api/projects/{projectId}/statuses/{statusId}` (admin) — body: name,
+  description, active
+- `DELETE /api/projects/{projectId}/statuses/{statusId}` (admin) — 400 if it's the
+  project's starting status, or if any time entry still references it
 - `PUT /api/projects/{projectId}/statuses/{statusId}/move-up`,
   `PUT .../move-down` (admin) — swaps `sequence` with the adjacent status; returns the
   project's updated status list
+- `PUT /api/projects/{projectId}/statuses/{statusId}/set-starting` (admin) — makes
+  this the project's starting status, un-setting whichever status held it before
+- `GET /api/projects/{projectId}/statuses/{statusId}/children` — any authenticated
+  user; the statuses directly reachable from this one (the workflow graph)
+- `PUT /api/projects/{projectId}/statuses/{statusId}/children/{childStatusId}`
+  (admin) — links `childStatusId` as reachable from `statusId` (a no-op, not an
+  error, if already linked); 400 on a self-loop, 404 if either status doesn't belong
+  to `projectId`
+- `DELETE /api/projects/{projectId}/statuses/{statusId}/children/{childStatusId}`
+  (admin) — unlinks (a no-op, not an error, if not linked)
 
 Every `@Valid @RequestBody` failure across the API returns a proper `400` with an
 `{"error": "..."}` body via an explicit `@ExceptionHandler(MethodArgumentNotValidException.class)`

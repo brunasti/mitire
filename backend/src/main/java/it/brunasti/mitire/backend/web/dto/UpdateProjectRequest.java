@@ -4,5 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;
 
-public record UpdateProjectRequest(@NotBlank String name, boolean active, LocalDate startDate, LocalDate endDate) {
+public record UpdateProjectRequest(@NotBlank String name, boolean active, LocalDate startDate, LocalDate endDate,
+                                    Long approverId) {
 }

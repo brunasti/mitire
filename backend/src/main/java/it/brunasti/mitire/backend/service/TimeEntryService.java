@@ -1,7 +1,7 @@
 package it.brunasti.mitire.backend.service;
 
 import it.brunasti.mitire.backend.domain.Project;
-import it.brunasti.mitire.backend.domain.ProjectStatus;
+import it.brunasti.mitire.backend.domain.ProjectEntityStatus;
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
 import it.brunasti.mitire.backend.domain.User;
@@ -26,14 +26,14 @@ public class TimeEntryService {
     private final TimeEntryRepository timeEntryRepository;
     private final UserService userService;
     private final ProjectService projectService;
-    private final ProjectStatusService projectStatusService;
+    private final ProjectEntityStatusService projectEntityStatusService;
 
     public TimeEntryService(TimeEntryRepository timeEntryRepository, UserService userService,
-                             ProjectService projectService, ProjectStatusService projectStatusService) {
+                             ProjectService projectService, ProjectEntityStatusService projectEntityStatusService) {
         this.timeEntryRepository = timeEntryRepository;
         this.userService = userService;
         this.projectService = projectService;
-        this.projectStatusService = projectStatusService;
+        this.projectEntityStatusService = projectEntityStatusService;
     }
 
     public TimeEntryDto create(CreateTimeEntryRequest request) {
@@ -54,7 +54,7 @@ public class TimeEntryService {
         entry.setWorkDate(request.workDate());
         entry.setHours(request.hours());
         entry.setDescription(request.description());
-        entry.setStatus(projectStatusService.getDefaultForProject(project.getId()));
+        entry.setStatus(projectEntityStatusService.getDefaultForProject(project.getId()));
 
         return toDto(timeEntryRepository.save(entry));
     }
@@ -74,7 +74,7 @@ public class TimeEntryService {
             if (requester.getRole() != Role.ADMIN) {
                 throw new AccessDeniedException("Only ADMIN can change the status of a time entry");
             }
-            ProjectStatus newStatus = projectStatusService.getReference(request.statusId());
+            ProjectEntityStatus newStatus = projectEntityStatusService.getReference(request.statusId());
             if (!newStatus.getProject().getId().equals(entry.getProject().getId())) {
                 throw new IllegalArgumentException("Status does not belong to this entry's project");
             }

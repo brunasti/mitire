@@ -1,10 +1,10 @@
 package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.domain.Role;
-import it.brunasti.mitire.backend.service.ProjectStatusService;
+import it.brunasti.mitire.backend.service.ProjectEntityStatusService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
-import it.brunasti.mitire.backend.web.dto.ProjectStatusDto;
+import it.brunasti.mitire.backend.web.dto.ProjectEntityStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import com.vaadin.flow.component.UI;
@@ -42,7 +42,7 @@ import java.util.NoSuchElementException;
 public class TimeEntryDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 
     private final TimeEntryService timeEntryService;
-    private final ProjectStatusService projectStatusService;
+    private final ProjectEntityStatusService projectEntityStatusService;
     private final Long currentUserId;
     private final Role currentUserRole;
 
@@ -53,13 +53,13 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
     private final NumberField hours = new NumberField("Hours");
     private final TextField description = new TextField("Description");
 
-    private ComboBox<ProjectStatusDto> statusComboBox;
+    private ComboBox<ProjectEntityStatusDto> statusComboBox;
     private Long entryId;
 
-    public TimeEntryDetailView(TimeEntryService timeEntryService, ProjectStatusService projectStatusService,
+    public TimeEntryDetailView(TimeEntryService timeEntryService, ProjectEntityStatusService projectEntityStatusService,
                                 UserService userService, AuthenticationContext authenticationContext) {
         this.timeEntryService = timeEntryService;
-        this.projectStatusService = projectStatusService;
+        this.projectEntityStatusService = projectEntityStatusService;
         var currentUser = authenticationContext.getPrincipalName()
                 .map(userService::getByUsername)
                 .orElseThrow();
@@ -97,11 +97,14 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
 
             statusField.removeAll();
             if (currentUserRole == Role.ADMIN) {
-                List<ProjectStatusDto> statuses = projectStatusService.findByProject(entry.projectId());
+                List<ProjectEntityStatusDto> statuses = projectEntityStatusService.findByProject(entry.projectId());
+                List<ProjectEntityStatusDto> selectable = statuses.stream()
+                        .filter(s -> s.active() || s.id().equals(entry.statusId()))
+                        .toList();
                 statusComboBox = new ComboBox<>();
-                statusComboBox.setItems(statuses);
-                statusComboBox.setItemLabelGenerator(ProjectStatusDto::name);
-                statuses.stream().filter(s -> s.id().equals(entry.statusId())).findFirst()
+                statusComboBox.setItems(selectable);
+                statusComboBox.setItemLabelGenerator(ProjectEntityStatusDto::name);
+                selectable.stream().filter(s -> s.id().equals(entry.statusId())).findFirst()
                         .ifPresent(statusComboBox::setValue);
                 statusField.add(statusComboBox);
             } else {
