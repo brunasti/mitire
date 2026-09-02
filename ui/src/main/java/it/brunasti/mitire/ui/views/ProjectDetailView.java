@@ -23,9 +23,11 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.data.provider.SortDirection;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -80,6 +82,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
     private List<GroupDto> allGroups;
     private Long projectId;
+    private Long currentApproverId;
 
     public ProjectDetailView(ProjectService projectService, TimeEntryService timeEntryService,
                               UserService userService, GroupService groupService,
@@ -139,6 +142,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             event.rerouteToError(NotFoundException.class, "Project not found");
             return;
         }
+        currentApproverId = project.approverId();
         entriesGrid.setItems(timeEntryService.search(null, projectId, null, null));
         List<UserDto> projectUsers = userService.findByProjectAccess(projectId);
         usersGrid.setItems(projectUsers);
@@ -168,6 +172,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
                 ProjectDto updated = projectService.update(projectId, new UpdateProjectRequest(
                         name.getValue(), active.getValue(), startDate.getValue(), endDate.getValue(), approverId, ownerId));
                 projectNameLabel.setText(updated.name());
+                currentApproverId = updated.approverId();
+                usersGrid.getDataProvider().refreshAll();
                 Notification.show("Project updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (IllegalArgumentException ex) {
                 Notifications.showError(ex.getMessage());
@@ -182,7 +188,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     }
 
     private VerticalLayout buildEntriesTab() {
-        entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true);
+        Grid.Column<TimeEntryDto> dateColumn = entriesGrid.addColumn(TimeEntryDto::workDate)
+                .setHeader("Date").setSortable(true);
         entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
         entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
@@ -190,6 +197,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         entriesGrid.setSizeFull();
         entriesGrid.getStyle().set("cursor", "pointer");
         entriesGrid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));
+        entriesGrid.sort(List.of(new GridSortOrder<>(dateColumn, SortDirection.DESCENDING)));
 
         VerticalLayout layout = new VerticalLayout(entriesGrid);
         layout.setSizeFull();
@@ -203,6 +211,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         usersGrid.addColumn(UserDto::role).setHeader("Role");
         usersGrid.addColumn(u -> u.groups().stream().map(GroupDto::name).reduce((a, b) -> a + ", " + b).orElse("-"))
                 .setHeader("Groups");
+        usersGrid.addColumn(u -> currentApproverId != null && currentApproverId.equals(u.id()) ? "Yes" : "")
+                .setHeader("Approver");
         usersGrid.setSizeFull();
         usersGrid.getStyle().set("cursor", "pointer");
         usersGrid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));

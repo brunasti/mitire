@@ -115,9 +115,12 @@ Clicking a project row on the Projects page opens `/projects/{id}`, showing the
 project's name next to the "← Back to projects" link (kept live after a rename), with
 five tabs: **Project details** (edit name/active status/start date/end date/approver —
 see below), **Time Entries** (every entry logged against the project, across all
-users; clicking a row opens that entry's detail page), **Users** (everyone with access
-to the project — group members plus all ADMINs; clicking a row there opens that user's
-detail page), **Groups** (every group that grants access to this project, a picker to
+users, sorted by Date descending by default; clicking a row opens that entry's detail
+page), **Users** (everyone with access to the project — group members plus all
+ADMINs, with an **Approver** column showing "Yes" on the row of the project's
+designated approver (see below) and blank for everyone else, live-updated the moment a
+new approver is saved on the Project details tab; clicking a row there opens that
+user's detail page), **Groups** (every group that grants access to this project, a picker to
 link an additional existing group, and a trashcan icon per row to unlink one — with
 confirmation — the reciprocal of the Projects tab on a group's page), and **Statuses**
 (the project's approval workflow — see below).
