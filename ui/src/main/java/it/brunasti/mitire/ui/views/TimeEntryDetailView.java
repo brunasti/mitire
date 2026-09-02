@@ -35,6 +35,7 @@ import org.springframework.security.access.AccessDeniedException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 @Route(value = "time-entries", layout = MainLayout.class)
 @PageTitle("Edit time entry | MiTiRe")
@@ -97,9 +98,11 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
 
             statusField.removeAll();
             if (currentUserRole == Role.ADMIN) {
-                List<ProjectEntityStatusDto> statuses = projectEntityStatusService.findByProject(entry.projectId());
-                List<ProjectEntityStatusDto> selectable = statuses.stream()
+                ProjectEntityStatusDto currentStatus = projectEntityStatusService.findById(entry.projectId(), entry.statusId());
+                List<ProjectEntityStatusDto> children = projectEntityStatusService.findChildren(entry.projectId(), entry.statusId());
+                List<ProjectEntityStatusDto> selectable = Stream.concat(Stream.of(currentStatus), children.stream())
                         .filter(s -> s.active() || s.id().equals(entry.statusId()))
+                        .distinct()
                         .toList();
                 statusComboBox = new ComboBox<>();
                 statusComboBox.setItems(selectable);

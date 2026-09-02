@@ -304,8 +304,14 @@ outside that range (no check is done for whichever bound, or both, is left unset
 
 Clicking a row on the Time Entries tab (your own time entries) opens `/time-entries/{id}`
 to edit it: Hours and Description are always editable; Status is an editable dropdown
-for ADMIN only (see "Approval status" above) and read-only text for everyone else;
-Project and Date are always read-only (creating a new entry for a different
+for ADMIN only (see "Approval status" above) and read-only text for everyone else. The
+dropdown's options are restricted to the entry's *current* status plus its direct
+depending statuses per the project's workflow graph (`ProjectEntityStatusService.findChildren()`
+— see "Workflow" above) — not every active status of the project — so ADMIN can only
+move an entry one step along its defined path at a time; a status with no depending
+statuses (nothing reachable from it) leaves the dropdown with just that one option. An
+inactive status stays selectable only if it's the entry's current one (same rule as
+before). Project and Date are always read-only (creating a new entry for a different
 project/date is a separate action from the home page's form). **Save** persists and
 returns to `/`; **Cancel**
 returns without saving; **Delete** asks for confirmation first, then deletes and
