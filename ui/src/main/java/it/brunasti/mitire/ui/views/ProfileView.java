@@ -47,11 +47,13 @@ public class ProfileView extends VerticalLayout {
         UserDto user = userService.getByUsername(username);
         loadInto(user);
 
+        add(new H2("My Profile"));
+
         if (user.role() == Role.ADMIN) {
             add(new RouterLink("View full user details", UserDetailView.class, user.id()));
         }
 
-        add(new H2("My Profile"), buildProfileForm(), new H2("Change Password"), buildPasswordForm());
+        add(buildProfileForm(), new H2("Change Password"), buildPasswordForm());
     }
 
     private void loadInto(UserDto user) {
