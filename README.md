@@ -117,10 +117,11 @@ five tabs: **Project details** (edit name/active status/start date/end date/appr
 see below), **Time Entries** (every entry logged against the project, across all
 users, sorted by Date descending by default; clicking a row opens that entry's detail
 page), **Users** (everyone with access to the project — group members plus all
-ADMINs, with an **Approver** column showing "Yes" on the row of the project's
-designated approver (see below) and blank for everyone else, live-updated the moment a
-new approver is saved on the Project details tab; clicking a row there opens that
-user's detail page), **Groups** (every group that grants access to this project, a picker to
+ADMINs, with an **Approver** column and an **Owner** column, each showing "Yes" on
+the row of the project's designated approver/owner (see below) and blank for everyone
+else, live-updated the moment a new approver or owner is saved on the Project details
+tab; clicking a row there opens that user's detail page), **Groups** (every group
+that grants access to this project, a picker to
 link an additional existing group, and a trashcan icon per row to unlink one — with
 confirmation — the reciprocal of the Projects tab on a group's page), and **Statuses**
 (the project's approval workflow — see below).

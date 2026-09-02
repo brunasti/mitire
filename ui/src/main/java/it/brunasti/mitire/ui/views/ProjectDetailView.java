@@ -83,6 +83,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private List<GroupDto> allGroups;
     private Long projectId;
     private Long currentApproverId;
+    private Long currentOwnerId;
 
     public ProjectDetailView(ProjectService projectService, TimeEntryService timeEntryService,
                               UserService userService, GroupService groupService,
@@ -143,6 +144,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             return;
         }
         currentApproverId = project.approverId();
+        currentOwnerId = project.ownerId();
         entriesGrid.setItems(timeEntryService.search(null, projectId, null, null));
         List<UserDto> projectUsers = userService.findByProjectAccess(projectId);
         usersGrid.setItems(projectUsers);
@@ -173,6 +175,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
                         name.getValue(), active.getValue(), startDate.getValue(), endDate.getValue(), approverId, ownerId));
                 projectNameLabel.setText(updated.name());
                 currentApproverId = updated.approverId();
+                currentOwnerId = updated.ownerId();
                 usersGrid.getDataProvider().refreshAll();
                 Notification.show("Project updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
             } catch (IllegalArgumentException ex) {
@@ -213,6 +216,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
                 .setHeader("Groups");
         usersGrid.addColumn(u -> currentApproverId != null && currentApproverId.equals(u.id()) ? "Yes" : "")
                 .setHeader("Approver");
+        usersGrid.addColumn(u -> currentOwnerId != null && currentOwnerId.equals(u.id()) ? "Yes" : "")
+                .setHeader("Owner");
         usersGrid.setSizeFull();
         usersGrid.getStyle().set("cursor", "pointer");
         usersGrid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));
