@@ -4,12 +4,16 @@ import it.brunasti.mitire.backend.domain.Project;
 import it.brunasti.mitire.backend.domain.ProjectEntryStatus;
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
+import it.brunasti.mitire.backend.domain.TimeEntryNote;
 import it.brunasti.mitire.backend.domain.TimeEntryTransition;
 import it.brunasti.mitire.backend.domain.User;
+import it.brunasti.mitire.backend.repository.TimeEntryNoteRepository;
 import it.brunasti.mitire.backend.repository.TimeEntryRepository;
 import it.brunasti.mitire.backend.repository.TimeEntryTransitionRepository;
+import it.brunasti.mitire.backend.web.dto.CreateTimeEntryNoteRequest;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.TimeEntryNoteDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryTransitionDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,15 +32,18 @@ public class TimeEntryService {
 
     private final TimeEntryRepository timeEntryRepository;
     private final TimeEntryTransitionRepository timeEntryTransitionRepository;
+    private final TimeEntryNoteRepository timeEntryNoteRepository;
     private final UserService userService;
     private final ProjectService projectService;
     private final ProjectEntryStatusService projectEntryStatusService;
 
     public TimeEntryService(TimeEntryRepository timeEntryRepository,
-                             TimeEntryTransitionRepository timeEntryTransitionRepository, UserService userService,
+                             TimeEntryTransitionRepository timeEntryTransitionRepository,
+                             TimeEntryNoteRepository timeEntryNoteRepository, UserService userService,
                              ProjectService projectService, ProjectEntryStatusService projectEntryStatusService) {
         this.timeEntryRepository = timeEntryRepository;
         this.timeEntryTransitionRepository = timeEntryTransitionRepository;
+        this.timeEntryNoteRepository = timeEntryNoteRepository;
         this.userService = userService;
         this.projectService = projectService;
         this.projectEntryStatusService = projectEntryStatusService;
@@ -103,6 +110,26 @@ public class TimeEntryService {
         return timeEntryTransitionRepository.findByTimeEntryIdOrderByCreatedAtDesc(entry.getId()).stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TimeEntryNoteDto> findNotes(Long id, Long requestingUserId) {
+        TimeEntry entry = getReferenceChecked(id, requestingUserId);
+        return timeEntryNoteRepository.findByTimeEntryIdOrderByCreatedAtDesc(entry.getId()).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    public TimeEntryNoteDto addNote(Long id, Long requestingUserId, CreateTimeEntryNoteRequest request) {
+        TimeEntry entry = getReferenceChecked(id, requestingUserId);
+        User author = userService.getReference(requestingUserId);
+
+        TimeEntryNote note = new TimeEntryNote();
+        note.setTimeEntry(entry);
+        note.setAuthor(author);
+        note.setText(request.text());
+
+        return toDto(timeEntryNoteRepository.save(note));
     }
 
     @Transactional(readOnly = true)
@@ -188,6 +215,16 @@ public class TimeEntryService {
                 transition.getChangedBy().getId(),
                 transition.getChangedBy().getFullName(),
                 transition.getCreatedAt()
+        );
+    }
+
+    private TimeEntryNoteDto toDto(TimeEntryNote note) {
+        return new TimeEntryNoteDto(
+                note.getId(),
+                note.getAuthor().getId(),
+                note.getAuthor().getFullName(),
+                note.getText(),
+                note.getCreatedAt()
         );
     }
 }

@@ -4,8 +4,10 @@ import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.service.ProjectEntryStatusService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
+import it.brunasti.mitire.backend.web.dto.CreateTimeEntryNoteRequest;
 import it.brunasti.mitire.backend.web.dto.ProjectEntryStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.TimeEntryNoteDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryTransitionDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import com.vaadin.flow.component.UI;
@@ -63,6 +65,9 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
 
     private final Grid<TimeEntryTransitionDto> transitionsGrid = new Grid<>(TimeEntryTransitionDto.class, false);
 
+    private final VerticalLayout notesContainer = new VerticalLayout();
+    private final TextArea newNoteText = new TextArea("New note");
+
     private ComboBox<ProjectEntryStatusDto> statusComboBox;
     private Long entryId;
 
@@ -83,8 +88,10 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         hours.setMin(0.25);
         hours.setMax(24);
         description.setHeight("150px");
+        newNoteText.setHeight("100px");
+        newNoteText.setWidth("600px");
 
-        add(buildForm(), buildTransitionsSection());
+        add(buildForm(), buildTransitionsSection(), buildNotesSection());
     }
 
     @Override
@@ -130,6 +137,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
                 statusField.add(new Span(entry.statusName()));
             }
             transitionsGrid.setItems(timeEntryService.findTransitions(entryId, currentUserId));
+            refreshNotes();
         } catch (NoSuchElementException | AccessDeniedException ex) {
             event.rerouteToError(NotFoundException.class, "Time entry not found");
         }
@@ -167,6 +175,68 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         VerticalLayout section = new VerticalLayout(new H3("Status history"), transitionsGrid);
         section.setPadding(false);
         return section;
+    }
+
+    private VerticalLayout buildNotesSection() {
+        notesContainer.setPadding(false);
+        notesContainer.setSpacing(false);
+        notesContainer.setWidth("600px");
+
+        Button addNote = new Button("Add note", e -> addNote());
+        addNote.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        VerticalLayout section = new VerticalLayout(new H3("Notes"), notesContainer, newNoteText, addNote);
+        section.setPadding(false);
+        return section;
+    }
+
+    private void addNote() {
+        if (newNoteText.getValue() == null || newNoteText.getValue().isBlank()) {
+            Notifications.showError("Note text is required");
+            return;
+        }
+        try {
+            timeEntryService.addNote(entryId, currentUserId, new CreateTimeEntryNoteRequest(newNoteText.getValue()));
+            newNoteText.clear();
+            refreshNotes();
+            Notification.show("Note added").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+        } catch (IllegalArgumentException | AccessDeniedException ex) {
+            Notifications.showError(ex.getMessage());
+        }
+    }
+
+    private void refreshNotes() {
+        notesContainer.removeAll();
+        List<TimeEntryNoteDto> notes = timeEntryService.findNotes(entryId, currentUserId);
+        if (notes.isEmpty()) {
+            Span empty = new Span("No notes yet.");
+            empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+            notesContainer.add(empty);
+        }
+        notes.forEach(note -> notesContainer.add(buildNoteCard(note)));
+    }
+
+    private Div buildNoteCard(TimeEntryNoteDto note) {
+        Span author = new Span(note.authorFullName());
+        author.getStyle().set("font-weight", "600");
+
+        Span timestamp = new Span(Formatters.timestamp(note.createdAt()));
+        timestamp.getStyle().set("color", "var(--lumo-secondary-text-color)").set("font-size", "0.875rem");
+
+        HorizontalLayout header = new HorizontalLayout(author, timestamp);
+        header.setSpacing(true);
+
+        Div text = new Div();
+        text.setText(note.text());
+        text.getStyle().set("white-space", "pre-wrap").set("margin-top", "0.25rem");
+
+        Div card = new Div(header, text);
+        card.getStyle()
+                .set("border", "1px solid var(--lumo-contrast-10pct)")
+                .set("border-radius", "var(--lumo-border-radius-m)")
+                .set("padding", "0.75rem")
+                .set("margin-bottom", "0.5rem");
+        return card;
     }
 
     private void save() {

@@ -2,8 +2,10 @@ package it.brunasti.mitire.backend.web;
 
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
+import it.brunasti.mitire.backend.web.dto.CreateTimeEntryNoteRequest;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.TimeEntryNoteDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryTransitionDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import jakarta.validation.Valid;
@@ -63,6 +65,18 @@ public class TimeEntryController {
     @GetMapping("/{id}/transitions")
     public List<TimeEntryTransitionDto> findTransitions(@PathVariable Long id, Authentication authentication) {
         return timeEntryService.findTransitions(id, resolveUserId(authentication));
+    }
+
+    @GetMapping("/{id}/notes")
+    public List<TimeEntryNoteDto> findNotes(@PathVariable Long id, Authentication authentication) {
+        return timeEntryService.findNotes(id, resolveUserId(authentication));
+    }
+
+    @PostMapping("/{id}/notes")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TimeEntryNoteDto addNote(@PathVariable Long id, @Valid @RequestBody CreateTimeEntryNoteRequest request,
+                                     Authentication authentication) {
+        return timeEntryService.addNote(id, resolveUserId(authentication), request);
     }
 
     private Long resolveUserId(Authentication authentication) {

@@ -196,3 +196,10 @@ IN the http://localhost:8080/time-entries/<id> page, add at the bottom, a list w
 **2026-09-03 15:41:18**
 
 In the page http://localhost:8080/time-entries/<id>, change the Description into a TextArea
+
+---
+
+**2026-09-03 16:06:33**
+
+Enable the possibility of adding notes to an Entity.
+Each note should record the time when it was created, by whom, and a text (edited as a textarea).

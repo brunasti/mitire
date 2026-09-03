@@ -6,6 +6,7 @@ import it.brunasti.mitire.backend.domain.ProjectEntryStatus;
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
 import it.brunasti.mitire.backend.domain.User;
+import it.brunasti.mitire.backend.repository.TimeEntryNoteRepository;
 import it.brunasti.mitire.backend.repository.TimeEntryRepository;
 import it.brunasti.mitire.backend.repository.TimeEntryTransitionRepository;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
@@ -35,6 +36,8 @@ class TimeEntryServiceTest {
     @Mock
     private TimeEntryTransitionRepository timeEntryTransitionRepository;
     @Mock
+    private TimeEntryNoteRepository timeEntryNoteRepository;
+    @Mock
     private UserService userService;
     @Mock
     private ProjectService projectService;
@@ -52,7 +55,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createPersistsAndReturnsDtoWhenUserHasProjectAccessThroughGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -90,7 +93,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createSucceedsForAdminRegardlessOfGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -113,7 +116,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsForViewerInAViewerRoleGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -141,7 +144,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createSucceedsForViewerElevatedByMemberRoleGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -171,7 +174,7 @@ class TimeEntryServiceTest {
 
     @Test
     void updateStatusSucceedsForNonAdminUserElevatedToAdminByGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -222,7 +225,7 @@ class TimeEntryServiceTest {
 
     @Test
     void updateStatusRecordsTransitionWithOldStatusNewStatusAndChangedByUser() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -271,7 +274,7 @@ class TimeEntryServiceTest {
 
     @Test
     void updateWithUnchangedStatusDoesNotRecordTransition() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -308,7 +311,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsWhenUserHasNoAccessToProject() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -329,7 +332,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsWhenDailyTotalWouldExceed24Hours() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -356,7 +359,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsWorkDateOutsideProjectDateRange() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -379,7 +382,7 @@ class TimeEntryServiceTest {
 
     @Test
     void updateRejectsWhenDailyTotalWouldExceed24HoursExcludingItself() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         User user = new User();
         user.setId(1L);
@@ -414,7 +417,7 @@ class TimeEntryServiceTest {
 
     @Test
     void findTransitionsReturnsHistoryOrderedNewestFirstForTheOwningUser() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -460,7 +463,7 @@ class TimeEntryServiceTest {
 
     @Test
     void findTransitionsRejectsUserWithoutAccessToTheEntry() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -485,5 +488,75 @@ class TimeEntryServiceTest {
         when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
 
         assertThatThrownBy(() -> service.findTransitions(99L, 2L)).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void addNoteSavesNoteAuthoredByRequestingUser() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        User author = new User();
+        author.setId(1L);
+        author.setUsername("alice");
+        author.setFullName("Alice Anderson");
+        author.setRole(Role.MEMBER);
+
+        TimeEntry entry = new TimeEntry();
+        entry.setId(99L);
+        entry.setUser(author);
+        entry.setProject(project);
+
+        when(userService.getReference(1L)).thenReturn(author);
+        when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
+        when(timeEntryNoteRepository.save(any(it.brunasti.mitire.backend.domain.TimeEntryNote.class)))
+                .thenAnswer(invocation -> {
+                    it.brunasti.mitire.backend.domain.TimeEntryNote note = invocation.getArgument(0);
+                    note.setId(1L);
+                    return note;
+                });
+
+        it.brunasti.mitire.backend.web.dto.CreateTimeEntryNoteRequest request =
+                new it.brunasti.mitire.backend.web.dto.CreateTimeEntryNoteRequest("please review by Friday");
+
+        it.brunasti.mitire.backend.web.dto.TimeEntryNoteDto dto = service.addNote(99L, 1L, request);
+
+        assertThat(dto.text()).isEqualTo("please review by Friday");
+        assertThat(dto.authorId()).isEqualTo(1L);
+        assertThat(dto.authorFullName()).isEqualTo("Alice Anderson");
+    }
+
+    @Test
+    void addNoteRejectsUserWithoutAccessToTheEntry() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, timeEntryNoteRepository, userService, projectService, projectEntryStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        User owner = new User();
+        owner.setId(1L);
+        owner.setUsername("alice");
+        owner.setRole(Role.MEMBER);
+
+        User stranger = new User();
+        stranger.setId(2L);
+        stranger.setUsername("bob");
+        stranger.setRole(Role.MEMBER);
+
+        TimeEntry entry = new TimeEntry();
+        entry.setId(99L);
+        entry.setUser(owner);
+        entry.setProject(project);
+
+        when(userService.getReference(2L)).thenReturn(stranger);
+        when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
+
+        it.brunasti.mitire.backend.web.dto.CreateTimeEntryNoteRequest request =
+                new it.brunasti.mitire.backend.web.dto.CreateTimeEntryNoteRequest("sneaky note");
+
+        assertThatThrownBy(() -> service.addNote(99L, 2L, request)).isInstanceOf(AccessDeniedException.class);
     }
 }
