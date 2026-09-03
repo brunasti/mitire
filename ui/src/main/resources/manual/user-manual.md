@@ -307,7 +307,7 @@ confirmation.
    (group members or other Administrators).
 4. New projects come pre-seeded with a simple `Submitted → Approved`/`Rejected`
    workflow. As Administrator you can adjust it yourself from the project's
-   **Statuses** tab (identical capabilities to what an Owner has from their
+   **Workflow** tab (identical capabilities to what an Owner has from their
    **Project workflow** page — see the Owner section above for the full workflow
    walkthrough), or leave it to the project's Owner.
 

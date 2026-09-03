@@ -44,6 +44,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
 
     private final TimeEntryService timeEntryService;
     private final ProjectEntityStatusService projectEntityStatusService;
+    private final UserService userService;
     private final Long currentUserId;
     private final Role currentUserRole;
 
@@ -66,6 +67,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
                 .orElseThrow();
         this.currentUserId = currentUser.id();
         this.currentUserRole = currentUser.role();
+        this.userService = userService;
 
         workDate.setReadOnly(true);
         hours.setStep(0.25);
@@ -96,8 +98,10 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
             hours.setValue(entry.hours().doubleValue());
             description.setValue(entry.description() != null ? entry.description() : "");
 
+            boolean isProjectAdmin = userService.effectiveRole(currentUserId, entry.projectId()) == Role.ADMIN;
+
             statusField.removeAll();
-            if (currentUserRole == Role.ADMIN) {
+            if (isProjectAdmin) {
                 ProjectEntityStatusDto currentStatus = projectEntityStatusService.findById(entry.projectId(), entry.statusId());
                 List<ProjectEntityStatusDto> children = projectEntityStatusService.findChildren(entry.projectId(), entry.statusId());
                 List<ProjectEntityStatusDto> selectable = Stream.concat(Stream.of(currentStatus), children.stream())

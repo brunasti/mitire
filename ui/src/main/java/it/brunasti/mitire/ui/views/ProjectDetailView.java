@@ -116,7 +116,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         tabSheet.add("Time Entries", buildEntriesTab());
         tabSheet.add("Users", buildUsersTab());
         tabSheet.add("Groups", buildGroupsTab());
-        tabSheet.add("Statuses", buildStatusesTab());
+        tabSheet.add("Workflow", buildStatusesTab());
         tabSheet.setSizeFull();
 
         projectNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");

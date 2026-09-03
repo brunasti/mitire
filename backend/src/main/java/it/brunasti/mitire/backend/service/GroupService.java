@@ -41,6 +41,7 @@ public class GroupService {
         }
         Group group = new Group();
         group.setName(request.name());
+        group.setRole(request.role());
         group.setProjects(resolveProjects(request.projectIds()));
         return toDto(groupRepository.save(group));
     }
@@ -53,6 +54,7 @@ public class GroupService {
     public GroupDto update(Long id, UpdateGroupRequest request) {
         Group group = getReference(id);
         group.setName(request.name());
+        group.setRole(request.role());
         group.setProjects(resolveProjects(request.projectIds()));
         return toDto(groupRepository.save(group));
     }
@@ -107,7 +109,7 @@ public class GroupService {
                 .map(this::toProjectDto)
                 .sorted(Comparator.comparing(ProjectDto::code))
                 .toList();
-        return new GroupDto(group.getId(), group.getName(), projects);
+        return new GroupDto(group.getId(), group.getName(), group.getRole(), projects);
     }
 
     private ProjectDto toProjectDto(Project project) {

@@ -1,5 +1,6 @@
 package it.brunasti.mitire.ui.views;
 
+import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.service.GroupService;
 import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.service.UserService;
@@ -44,6 +45,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
     private final UserService userService;
 
     private final TextField name = new TextField("Name");
+    private final ComboBox<Role> role = new ComboBox<>("Role");
     private final Span groupNameLabel = new Span();
     private final ComboBox<ProjectDto> addProject = new ComboBox<>("Add project");
     private final ComboBox<UserDto> addUser = new ComboBox<>("Add user");
@@ -63,6 +65,9 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         this.userService = userService;
 
         setSizeFull();
+
+        role.setItems(Role.values());
+        role.setHelperText("The role members get on this group's projects");
 
         allProjects = projectService.findAll();
         addProject.setItemLabelGenerator(p -> p.code() + " - " + p.name());
@@ -95,6 +100,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             return;
         }
         name.setValue(group.name());
+        role.setValue(group.role());
         groupNameLabel.setText(group.name());
         refreshProjects(group.projects());
         refreshUsers(userService.findByGroup(groupId));
@@ -102,7 +108,7 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
 
     private FormLayout buildDetailsTab() {
         Button save = new Button("Save", e -> save());
-        FormLayout form = new FormLayout(name, save);
+        FormLayout form = new FormLayout(name, role, save);
         form.setMaxWidth("600px");
         return form;
     }
@@ -243,8 +249,13 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
             Notifications.showError("Name is required");
             return;
         }
+        if (role.getValue() == null) {
+            Notifications.showError("Role is required");
+            return;
+        }
         try {
-            GroupDto updated = groupService.update(groupId, new UpdateGroupRequest(name.getValue(), currentProjectIds));
+            GroupDto updated = groupService.update(groupId,
+                    new UpdateGroupRequest(name.getValue(), role.getValue(), currentProjectIds));
             groupNameLabel.setText(updated.name());
             Notification.show("Group updated").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {

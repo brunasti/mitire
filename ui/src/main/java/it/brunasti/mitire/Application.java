@@ -2,10 +2,13 @@ package it.brunasti.mitire;
 
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.server.AppShellSettings;
+import com.vaadin.flow.theme.Theme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SuppressWarnings("deprecation")
 @SpringBootApplication
+@Theme("mitire")
 public class Application implements AppShellConfigurator {
 
     public static void main(String[] args) {

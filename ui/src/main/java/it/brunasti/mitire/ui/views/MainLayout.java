@@ -1,6 +1,7 @@
 package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.service.UserService;
+import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
@@ -36,10 +37,10 @@ public class MainLayout extends AppLayout {
         H1 title = new H1("MiTiRe");
         title.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.MEDIUM);
 
-        String fullName = authenticationContext.getAuthenticatedUser(org.springframework.security.core.userdetails.User.class)
-                .map(user -> userService.getByUsername(user.getUsername()).fullName())
-                .orElse("");
-        Span userName = new Span(fullName);
+        UserDto currentUser = authenticationContext.getAuthenticatedUser(org.springframework.security.core.userdetails.User.class)
+                .map(user -> userService.getByUsername(user.getUsername()))
+                .orElse(null);
+        Span userName = new Span(currentUser != null ? currentUser.fullName() : "");
         userName.getStyle().set("margin-right", "0.25rem");
 
         Button profile = new Button(VaadinIcon.USER.create(), e -> UI.getCurrent().navigate(ProfileView.class));
@@ -58,17 +59,25 @@ public class MainLayout extends AppLayout {
         Anchor manualLink = new Anchor("manual", "User Manual");
         manualLink.setTarget("_blank");
 
-        VerticalLayout nav = new VerticalLayout(
-                new RouterLink("Time entries", TimeEntriesView.class),
-                new RouterLink("My Projects", MyProjectsView.class)
-        );
-        if (isAdmin()) {
+        boolean pureViewer = isViewer() && currentUser != null
+                && userService.findOperableProjects(currentUser.id()).isEmpty();
+
+        VerticalLayout nav = new VerticalLayout();
+        if (pureViewer) {
+            nav.add(new RouterLink("Projects", ProjectsOverviewView.class));
+        } else {
             nav.add(
-                    new Hr(),
-                    new RouterLink("Projects", ProjectsView.class),
-                    new RouterLink("Groups", GroupsView.class),
-                    new RouterLink("Users", UsersView.class)
+                    new RouterLink("Time entries", TimeEntriesView.class),
+                    new RouterLink("My Projects", MyProjectsView.class)
             );
+            if (isAdmin()) {
+                nav.add(
+                        new Hr(),
+                        new RouterLink("Projects", ProjectsView.class),
+                        new RouterLink("Groups", GroupsView.class),
+                        new RouterLink("Users", UsersView.class)
+                );
+            }
         }
         nav.add(new Hr(), manualLink);
         nav.setPadding(true);
@@ -76,7 +85,15 @@ public class MainLayout extends AppLayout {
     }
 
     private boolean isAdmin() {
+        return hasRole("ROLE_ADMIN");
+    }
+
+    private boolean isViewer() {
+        return hasRole("ROLE_VIEWER");
+    }
+
+    private boolean hasRole(String role) {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+                .anyMatch(authority -> authority.getAuthority().equals(role));
     }
 }

@@ -1,0 +1,7 @@
+html {
+  --lumo-font-family: Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html, body {
+  font-family: var(--lumo-font-family);
+}

@@ -241,11 +241,11 @@ public class ProjectEntityStatusService {
     private void requireWorkflowEditAccess(Long projectId, Long requestingUserId) {
         User requester = userRepository.findById(requestingUserId)
                 .orElseThrow(() -> new NoSuchElementException("User " + requestingUserId + " not found"));
-        if (requester.getRole() == Role.ADMIN) {
-            return;
-        }
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NoSuchElementException("Project " + projectId + " not found"));
+        if (Role.effectiveFor(requester, project) == Role.ADMIN) {
+            return;
+        }
         User owner = project.getOwner();
         if (owner == null || !owner.getId().equals(requestingUserId)) {
             throw new AccessDeniedException("Only the project owner or an ADMIN can edit the workflow");

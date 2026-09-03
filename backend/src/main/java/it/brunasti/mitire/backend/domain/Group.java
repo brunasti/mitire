@@ -22,6 +22,10 @@ public class Group {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.MEMBER;
+
     @ManyToMany
     @JoinTable(
             name = "group_project",

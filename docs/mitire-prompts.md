@@ -125,3 +125,26 @@ Maybe we need to switch to pure html instead of markdown.
 **2026-09-03 12:44:25**
 
 Add a VIEWER role, next to ADMIN and MEMBER, which enable the user only to see the projects, not to edit anything.
+
+---
+
+**2026-09-03 12:56:54**
+
+Please add to the Group, a role attribute, which provide to the users in that group the role when operating on the project.
+This means that if a user U1 is part of a group G1, which has a role MEMBER, and which has a project P1, the user can operate on the project P1 as MEMBER, even if the intrinsec role of the user U1 is VIEWER.
+If the same user U1 is part of a group G2, which has the role ADMIN, and which is connected to the same project P1, the user can operate on the project P1 as ADMIN, even if the intrinsec role of the user U1 is VIEWER.
+If a user has multiple roles for a specific project, derived from the intrinsec one of the user or from a group of which he/she is part, the more extensive one is the valid one.
+So if the intrinsec is VIEWER and the group on the project is ADMIN, the user is then ADMIN for that project.
+
+---
+
+**2026-09-03 13:28:02**
+
+The page http://localhost:8080/project-workflow/<id> for the Owner of a project should be like the http://localhost:8080/projects/<id> page, only with out the possibility of editing the tabs a part from the "Statuses".
+By the way, could you rename the tab "Statuses" into "Workflow" ?
+
+---
+
+**2026-09-03 13:36:35**
+
+Please: change the font of the system, from the current (I think Times new Roman), to a one without serif, as Tahoma.

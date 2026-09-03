@@ -40,7 +40,8 @@ public class TimeEntryService {
         User user = userService.getReference(request.userId());
         Project project = projectService.getReference(request.projectId());
 
-        if (!canAccess(user, project)) {
+        Role effective = Role.effectiveFor(user, project);
+        if (effective == null || effective == Role.VIEWER) {
             throw new AccessDeniedException(
                     "User '" + user.getUsername() + "' does not have access to project '" + project.getCode() + "'");
         }
@@ -71,8 +72,8 @@ public class TimeEntryService {
         entry.setDescription(request.description());
         if (request.statusId() != null) {
             User requester = userService.getReference(requestingUserId);
-            if (requester.getRole() != Role.ADMIN) {
-                throw new AccessDeniedException("Only ADMIN can change the status of a time entry");
+            if (Role.effectiveFor(requester, entry.getProject()) != Role.ADMIN) {
+                throw new AccessDeniedException("Only an ADMIN can change the status of a time entry");
             }
             ProjectEntityStatus newStatus = projectEntityStatusService.getReference(request.statusId());
             if (!newStatus.getProject().getId().equals(entry.getProject().getId())) {
@@ -124,18 +125,12 @@ public class TimeEntryService {
         }
     }
 
-    private boolean canAccess(User user, Project project) {
-        if (user.getRole() == Role.ADMIN) {
-            return true;
-        }
-        return user.getGroups().stream().anyMatch(group -> group.getProjects().contains(project));
-    }
-
     private TimeEntry getReferenceChecked(Long id, Long requestingUserId) {
         TimeEntry entry = timeEntryRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Time entry " + id + " not found"));
         User requester = userService.getReference(requestingUserId);
-        if (requester.getRole() != Role.ADMIN && !entry.getUser().getId().equals(requestingUserId)) {
+        boolean isProjectAdmin = Role.effectiveFor(requester, entry.getProject()) == Role.ADMIN;
+        if (!isProjectAdmin && !entry.getUser().getId().equals(requestingUserId)) {
             throw new AccessDeniedException("You do not have access to this time entry");
         }
         return entry;

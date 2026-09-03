@@ -1,5 +1,6 @@
 package it.brunasti.mitire.ui.views;
 
+import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
@@ -20,6 +21,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
@@ -34,10 +37,12 @@ import java.util.List;
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("Time entries | MiTiRe")
 @PermitAll
-public class TimeEntriesView extends VerticalLayout {
+public class TimeEntriesView extends VerticalLayout implements BeforeEnterObserver {
 
     private final TimeEntryService timeEntryService;
     private final Long currentUserId;
+    private final Role currentUserRole;
+    private final List<ProjectDto> operableProjects;
 
     private final Grid<TimeEntryDto> grid = new Grid<>(TimeEntryDto.class, false);
 
@@ -48,8 +53,9 @@ public class TimeEntriesView extends VerticalLayout {
                 .map(userService::getByUsername)
                 .orElseThrow();
         this.currentUserId = currentUser.id();
+        this.currentUserRole = currentUser.role();
 
-        List<ProjectDto> accessibleProjects = userService.findAccessibleProjects(currentUserId).stream()
+        this.operableProjects = userService.findOperableProjects(currentUserId).stream()
                 .filter(ProjectDto::active)
                 .toList();
 
@@ -58,7 +64,7 @@ public class TimeEntriesView extends VerticalLayout {
         H2 title = new H2("Time Report System");
 
         TabSheet tabSheet = new TabSheet();
-        tabSheet.add("Add Time Entry", buildForm(accessibleProjects));
+        tabSheet.add("Add Time Entry", buildForm(operableProjects));
         tabSheet.add("Time Entries", buildGrid());
         tabSheet.setSizeFull();
 
@@ -68,9 +74,16 @@ public class TimeEntriesView extends VerticalLayout {
         refreshGrid();
     }
 
-    private FormLayout buildForm(List<ProjectDto> accessibleProjects) {
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (currentUserRole == Role.VIEWER && operableProjects.isEmpty()) {
+            event.forwardTo(ProjectsOverviewView.class);
+        }
+    }
+
+    private FormLayout buildForm(List<ProjectDto> operableProjects) {
         ComboBox<ProjectDto> project = new ComboBox<>("Project");
-        project.setItems(accessibleProjects);
+        project.setItems(operableProjects);
         project.setItemLabelGenerator(p -> p.code() + " - " + p.name());
 
         DatePicker workDate = new DatePicker("Date", LocalDate.now());

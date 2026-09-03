@@ -78,6 +78,29 @@ public class UserService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ProjectDto> findOperableProjects(Long userId) {
+        User user = getReference(userId);
+        if (user.getRole() == Role.ADMIN) {
+            return projectService.findAll();
+        }
+        return user.getGroups().stream()
+                .flatMap(group -> group.getProjects().stream())
+                .distinct()
+                .filter(project -> {
+                    Role effective = Role.effectiveFor(user, project);
+                    return effective != null && effective != Role.VIEWER;
+                })
+                .map(projectService::toDto)
+                .sorted(Comparator.comparing(ProjectDto::code))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Role effectiveRole(Long userId, Long projectId) {
+        return Role.effectiveFor(getReference(userId), projectService.getReference(projectId));
+    }
+
     private boolean hasAccess(User user, Long projectId) {
         if (user.getRole() == Role.ADMIN) {
             return true;

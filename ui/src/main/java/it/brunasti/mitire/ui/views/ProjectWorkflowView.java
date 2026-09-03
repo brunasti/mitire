@@ -1,20 +1,24 @@
 package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.domain.Role;
+import it.brunasti.mitire.backend.service.GroupService;
 import it.brunasti.mitire.backend.service.ProjectEntityStatusService;
 import it.brunasti.mitire.backend.service.ProjectService;
+import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.CreateProjectEntityStatusRequest;
+import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
 import it.brunasti.mitire.backend.web.dto.ProjectEntityStatusDto;
+import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateProjectEntityStatusRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -26,6 +30,7 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
@@ -40,12 +45,14 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 /**
- * Minimal workflow-editing page for a project's Owner (or ADMIN), separate from the
- * ADMIN-only /projects/{id} page — a project Owner who isn't an ADMIN has no access to
- * that page, so this gives them a self-contained place to manage their project's
- * statuses and the dependencies between them.
+ * Project page for a project's Owner (or ADMIN), separate from the ADMIN-only
+ * /projects/{id} page — a project Owner who isn't an ADMIN has no access to that page.
+ * Mirrors its tabs (Project details, Time Entries, Users, Groups, Workflow) but only the
+ * Workflow tab is editable; the rest are read-only, since an Owner manages the approval
+ * workflow, not the project's membership or settings.
  */
 @Route(value = "project-workflow", layout = MainLayout.class)
 @PageTitle("Project workflow | MiTiRe")
@@ -53,19 +60,41 @@ import java.util.NoSuchElementException;
 public class ProjectWorkflowView extends VerticalLayout implements HasUrlParameter<Long> {
 
     private final ProjectService projectService;
+    private final TimeEntryService timeEntryService;
+    private final UserService userService;
+    private final GroupService groupService;
     private final ProjectEntityStatusService projectEntityStatusService;
     private final Long currentUserId;
     private final Role currentUserRole;
 
+    private final TextField code = new TextField("Code");
+    private final TextField name = new TextField("Name");
+    private final Checkbox active = new Checkbox("Active");
+    private final DatePicker startDate = new DatePicker("Start date");
+    private final DatePicker endDate = new DatePicker("End date");
+    private final ComboBox<UserDto> approver = new ComboBox<>("Approver");
+    private final ComboBox<UserDto> owner = new ComboBox<>("Owner");
     private final H2 projectNameLabel = new H2();
+
+    private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
+    private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
+    private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
     private final Grid<ProjectEntityStatusDto> statusesGrid = new Grid<>(ProjectEntityStatusDto.class, false);
 
     private Grid.Column<ProjectEntityStatusDto> statusActionsColumn;
-    private Long projectId;
 
-    public ProjectWorkflowView(ProjectService projectService, ProjectEntityStatusService projectEntityStatusService,
-                                UserService userService, AuthenticationContext authenticationContext) {
+    private Long projectId;
+    private Long currentApproverId;
+    private Long currentOwnerId;
+
+    public ProjectWorkflowView(ProjectService projectService, TimeEntryService timeEntryService,
+                                UserService userService, GroupService groupService,
+                                ProjectEntityStatusService projectEntityStatusService,
+                                AuthenticationContext authenticationContext) {
         this.projectService = projectService;
+        this.timeEntryService = timeEntryService;
+        this.userService = userService;
+        this.groupService = groupService;
         this.projectEntityStatusService = projectEntityStatusService;
         UserDto currentUser = authenticationContext.getPrincipalName()
                 .map(userService::getByUsername)
@@ -75,15 +104,33 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
 
         setSizeFull();
 
+        code.setReadOnly(true);
+        name.setReadOnly(true);
+        active.setReadOnly(true);
+        startDate.setReadOnly(true);
+        startDate.setWidth("160px");
+        endDate.setReadOnly(true);
+        endDate.setWidth("160px");
+        approver.setReadOnly(true);
+        approver.setItemLabelGenerator(UserDto::fullName);
+        owner.setReadOnly(true);
+        owner.setItemLabelGenerator(UserDto::fullName);
+
+        TabSheet tabSheet = new TabSheet();
+        tabSheet.add("Project details", buildDetailsTab());
+        tabSheet.add("Time Entries", buildEntriesTab());
+        tabSheet.add("Users", buildUsersTab());
+        tabSheet.add("Groups", buildGroupsTab());
+        tabSheet.add("Workflow", buildWorkflowTab());
+        tabSheet.setSizeFull();
+
         projectNameLabel.getStyle().set("margin", "0 0 0 1rem");
         HorizontalLayout header = new HorizontalLayout(
                 new RouterLink("← Back to my projects", MyProjectsView.class), projectNameLabel);
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
 
-        VerticalLayout content = buildStatusesSection();
-
-        add(header, content);
-        setFlexGrow(1, content);
+        add(header, tabSheet);
+        setFlexGrow(1, tabSheet);
     }
 
     @Override
@@ -101,11 +148,85 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
             event.rerouteToError(AccessDeniedException.class);
             return;
         }
+        code.setValue(project.code());
+        name.setValue(project.name());
+        active.setValue(project.active());
+        startDate.setValue(project.startDate());
+        endDate.setValue(project.endDate());
         projectNameLabel.setText(project.name());
+
+        currentApproverId = project.approverId();
+        currentOwnerId = project.ownerId();
+        List<UserDto> projectUsers = userService.findByProjectAccess(projectId);
+        usersGrid.setItems(projectUsers);
+        approver.setItems(projectUsers);
+        approver.clear();
+        Long approverId = project.approverId();
+        if (approverId != null) {
+            projectUsers.stream().filter(u -> u.id().equals(approverId)).findFirst().ifPresent(approver::setValue);
+        }
+        owner.setItems(projectUsers);
+        owner.clear();
+        Long ownerId = project.ownerId();
+        if (ownerId != null) {
+            projectUsers.stream().filter(u -> u.id().equals(ownerId)).findFirst().ifPresent(owner::setValue);
+        }
+        entriesGrid.setItems(timeEntryService.search(null, projectId, null, null));
+        groupsGrid.setItems(groupService.findByProject(projectId));
         refreshStatuses();
     }
 
-    private VerticalLayout buildStatusesSection() {
+    private FormLayout buildDetailsTab() {
+        HorizontalLayout startAndEndDate = new HorizontalLayout(startDate, endDate);
+        FormLayout form = new FormLayout(code, name, active, startAndEndDate, approver, owner);
+        form.setMaxWidth("600px");
+        return form;
+    }
+
+    private VerticalLayout buildEntriesTab() {
+        entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true);
+        entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
+        entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
+        entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
+        entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
+        entriesGrid.setSizeFull();
+
+        VerticalLayout layout = new VerticalLayout(entriesGrid);
+        layout.setSizeFull();
+        return layout;
+    }
+
+    private VerticalLayout buildUsersTab() {
+        usersGrid.addColumn(UserDto::username).setHeader("Username").setSortable(true);
+        usersGrid.addColumn(UserDto::fullName).setHeader("Full name");
+        usersGrid.addColumn(UserDto::email).setHeader("Email");
+        usersGrid.addColumn(UserDto::role).setHeader("Role");
+        usersGrid.addColumn(u -> u.groups().stream().map(GroupDto::name).reduce((a, b) -> a + ", " + b).orElse("-"))
+                .setHeader("Groups");
+        usersGrid.addColumn(u -> currentApproverId != null && currentApproverId.equals(u.id()) ? "Yes" : "")
+                .setHeader("Approver");
+        usersGrid.addColumn(u -> currentOwnerId != null && currentOwnerId.equals(u.id()) ? "Yes" : "")
+                .setHeader("Owner");
+        usersGrid.setSizeFull();
+
+        VerticalLayout layout = new VerticalLayout(usersGrid);
+        layout.setSizeFull();
+        return layout;
+    }
+
+    private VerticalLayout buildGroupsTab() {
+        groupsGrid.addColumn(GroupDto::name).setHeader("Name").setSortable(true);
+        groupsGrid.addColumn(GroupDto::role).setHeader("Role");
+        groupsGrid.addColumn(g -> g.projects().stream().map(ProjectDto::code).collect(Collectors.joining(", ")))
+                .setHeader("Projects");
+        groupsGrid.setSizeFull();
+
+        VerticalLayout layout = new VerticalLayout(groupsGrid);
+        layout.setSizeFull();
+        return layout;
+    }
+
+    private VerticalLayout buildWorkflowTab() {
         TextField newStatusName = new TextField("Name");
         TextField newStatusDescription = new TextField("Description");
         Button add = new Button("Add", e -> addStatus(newStatusName, newStatusDescription));

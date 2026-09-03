@@ -109,6 +109,115 @@ class TimeEntryServiceTest {
     }
 
     @Test
+    void createRejectsForViewerInAViewerRoleGroup() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        Group group = new Group();
+        group.setId(10L);
+        group.setName("Team A");
+        group.setRole(Role.VIEWER);
+        group.setProjects(Set.of(project));
+
+        User viewer = new User();
+        viewer.setId(1L);
+        viewer.setUsername("vic");
+        viewer.setRole(Role.VIEWER);
+        viewer.setGroups(Set.of(group));
+
+        when(userService.getReference(1L)).thenReturn(viewer);
+        when(projectService.getReference(2L)).thenReturn(project);
+
+        CreateTimeEntryRequest request = new CreateTimeEntryRequest(1L, 2L, LocalDate.of(2026, 8, 20), new BigDecimal("2"), null);
+
+        assertThatThrownBy(() -> service.create(request)).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void createSucceedsForViewerElevatedByMemberRoleGroup() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        Group group = new Group();
+        group.setId(10L);
+        group.setName("Team A");
+        group.setRole(Role.MEMBER);
+        group.setProjects(Set.of(project));
+
+        User viewer = new User();
+        viewer.setId(1L);
+        viewer.setUsername("vic");
+        viewer.setRole(Role.VIEWER);
+        viewer.setGroups(Set.of(group));
+
+        when(userService.getReference(1L)).thenReturn(viewer);
+        when(projectService.getReference(2L)).thenReturn(project);
+        when(projectEntityStatusService.getDefaultForProject(2L)).thenReturn(defaultStatus(project));
+        when(timeEntryRepository.save(any(TimeEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CreateTimeEntryRequest request = new CreateTimeEntryRequest(1L, 2L, LocalDate.of(2026, 8, 20), new BigDecimal("2"), null);
+
+        assertThat(service.create(request)).isNotNull();
+    }
+
+    @Test
+    void updateStatusSucceedsForNonAdminUserElevatedToAdminByGroup() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        Group group = new Group();
+        group.setId(10L);
+        group.setName("Leads");
+        group.setRole(Role.ADMIN);
+        group.setProjects(Set.of(project));
+
+        User approver = new User();
+        approver.setId(1L);
+        approver.setUsername("lead");
+        approver.setRole(Role.MEMBER);
+        approver.setGroups(Set.of(group));
+
+        User entryOwner = new User();
+        entryOwner.setId(2L);
+        entryOwner.setUsername("alice");
+
+        ProjectEntityStatus newStatus = new ProjectEntityStatus();
+        newStatus.setId(600L);
+        newStatus.setProject(project);
+        newStatus.setName("APPROVED");
+
+        TimeEntry entry = new TimeEntry();
+        entry.setId(99L);
+        entry.setUser(entryOwner);
+        entry.setProject(project);
+        entry.setWorkDate(LocalDate.of(2026, 8, 20));
+        entry.setHours(new BigDecimal("5"));
+        entry.setStatus(defaultStatus(project));
+
+        when(userService.getReference(1L)).thenReturn(approver);
+        when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
+        when(timeEntryRepository.findByUserIdAndWorkDate(2L, LocalDate.of(2026, 8, 20))).thenReturn(List.of());
+        when(projectEntityStatusService.getReference(600L)).thenReturn(newStatus);
+        when(timeEntryRepository.save(any(TimeEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest request =
+                new it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest(new BigDecimal("5"), null, 600L);
+
+        TimeEntryDto dto = service.update(99L, 1L, request);
+
+        assertThat(dto.statusId()).isEqualTo(600L);
+    }
+
+    @Test
     void createRejectsWhenUserHasNoAccessToProject() {
         TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
 

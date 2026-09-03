@@ -65,6 +65,17 @@ public class DataSeeder implements ApplicationRunner {
                 member.setGroups(Set.of(group));
                 userRepository.save(member);
             }
+
+            if (userRepository.findByUsername("viewer").isEmpty()) {
+                User viewer = new User();
+                viewer.setUsername("viewer");
+                viewer.setFullName("Sample Viewer");
+                viewer.setEmail("viewer@mitire.local");
+                viewer.setPasswordHash(passwordEncoder.encode("viewer123"));
+                viewer.setRole(Role.VIEWER);
+                viewer.setGroups(Set.of(group));
+                userRepository.save(viewer);
+            }
         }
     }
 }
