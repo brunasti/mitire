@@ -238,3 +238,22 @@ It would be useful to view it next to the Worflow tab into the http://localhost:
 **2026-09-03 17:57:46**
 
 The diagram is shown in a too little a frame. Can you create an extra tab with the diagram taking all the available space?
+
+---
+
+**2026-09-03 18:08:59**
+
+In the diagrams, the arrows are in the opposite direction.
+If there is a lot of empty space, could you trim it away, so that the image is centred?
+
+---
+
+**2026-09-03 18:23:28**
+
+There is too much space around the core part of the diagrams. Can you reduce the border space?
+
+---
+
+**2026-09-03 18:43:47**
+
+The drawing of the diagram is complex, could youput some comment in the code so that I can understand how it works? I think that the computeLevels functions goes too deep: there can not be more levels then the actual number of statuses...

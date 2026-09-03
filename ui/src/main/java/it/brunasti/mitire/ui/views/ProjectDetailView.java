@@ -372,6 +372,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         VerticalLayout layout = new VerticalLayout(workflowDiagramContainer);
         layout.setSizeFull();
         layout.setPadding(false);
+        layout.setFlexGrow(1, workflowDiagramContainer);
         return layout;
     }
 

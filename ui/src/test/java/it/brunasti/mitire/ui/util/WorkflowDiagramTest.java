@@ -45,6 +45,15 @@ class WorkflowDiagramTest {
         assertThat(html).contains("<svg");
         assertThat(html).contains("SUBMITTED").contains("APPROVED").contains("REJECTED");
         assertThat(html.split("marker-end", -1).length - 1).isEqualTo(2);
+        // orient="auto" (not "auto-start-reverse") so the arrowhead points along the path's
+        // actual end tangent, i.e. into the child status, not back toward the parent.
+        assertThat(html).contains("orient=\"auto\"").doesNotContain("auto-start-reverse");
+        assertThat(html).contains("style=\"flex-shrink:0;\"");
+        // Centers the diagram when the wrapping tab has more space than the diagram needs;
+        // this style lives on the wrapper <div>, i.e. the Html component's own root element,
+        // so it's on the element itself rather than inside getInnerHtml().
+        String wrapperStyle = result.getElement().getAttribute("style");
+        assertThat(wrapperStyle).contains("display:flex").contains("justify-content:center");
     }
 
     @Test
