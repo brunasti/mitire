@@ -100,3 +100,28 @@ esac
 **2026-09-03 11:46:00**
 
 Please move the link from the left menu to the manual as the last item, separated from the other by a line, and add index and quick links in the manual
+
+---
+
+**2026-09-03 12:05:24**
+
+The links in the manual don't work, because they point back to the application, insetad of the correct section of the document. Can you fix it? If not then just remove the internal links...
+
+---
+
+**2026-09-03 12:10:25**
+
+Can you separate the "Time Entries" and "My Projects" from the following one with a line?
+
+---
+
+**2026-09-03 12:13:30**
+
+The links in the manual markdown don't work, because they point back to the application (as for http://localhost:8080/#sec-every-user), insetad of the correct section of the document (maybe something like http://localhost:8080/manual#sec-every-user). Can you fix it? 
+Maybe we need to switch to pure html instead of markdown.
+
+---
+
+**2026-09-03 12:44:25**
+
+Add a VIEWER role, next to ADMIN and MEMBER, which enable the user only to see the projects, not to edit anything.

@@ -8,6 +8,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -59,16 +60,17 @@ public class MainLayout extends AppLayout {
 
         VerticalLayout nav = new VerticalLayout(
                 new RouterLink("Time entries", TimeEntriesView.class),
-                new RouterLink("My Projects", MyProjectsView.class),
-                manualLink
+                new RouterLink("My Projects", MyProjectsView.class)
         );
         if (isAdmin()) {
             nav.add(
+                    new Hr(),
                     new RouterLink("Projects", ProjectsView.class),
                     new RouterLink("Groups", GroupsView.class),
                     new RouterLink("Users", UsersView.class)
             );
         }
+        nav.add(new Hr(), manualLink);
         nav.setPadding(true);
         addToDrawer(nav);
     }
