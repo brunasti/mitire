@@ -7,6 +7,7 @@ import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
 import it.brunasti.mitire.backend.domain.User;
 import it.brunasti.mitire.backend.repository.TimeEntryRepository;
+import it.brunasti.mitire.backend.repository.TimeEntryTransitionRepository;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,8 @@ class TimeEntryServiceTest {
     @Mock
     private TimeEntryRepository timeEntryRepository;
     @Mock
+    private TimeEntryTransitionRepository timeEntryTransitionRepository;
+    @Mock
     private UserService userService;
     @Mock
     private ProjectService projectService;
@@ -49,7 +52,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createPersistsAndReturnsDtoWhenUserHasProjectAccessThroughGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -87,7 +90,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createSucceedsForAdminRegardlessOfGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -110,7 +113,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsForViewerInAViewerRoleGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -138,7 +141,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createSucceedsForViewerElevatedByMemberRoleGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -168,7 +171,7 @@ class TimeEntryServiceTest {
 
     @Test
     void updateStatusSucceedsForNonAdminUserElevatedToAdminByGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -218,8 +221,94 @@ class TimeEntryServiceTest {
     }
 
     @Test
+    void updateStatusRecordsTransitionWithOldStatusNewStatusAndChangedByUser() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+
+        ProjectEntryStatus oldStatus = defaultStatus(project);
+        ProjectEntryStatus newStatus = new ProjectEntryStatus();
+        newStatus.setId(600L);
+        newStatus.setProject(project);
+        newStatus.setName("APPROVED");
+
+        TimeEntry entry = new TimeEntry();
+        entry.setId(99L);
+        entry.setUser(admin);
+        entry.setProject(project);
+        entry.setWorkDate(LocalDate.of(2026, 8, 20));
+        entry.setHours(new BigDecimal("5"));
+        entry.setStatus(oldStatus);
+
+        when(userService.getReference(1L)).thenReturn(admin);
+        when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
+        when(timeEntryRepository.findByUserIdAndWorkDate(1L, LocalDate.of(2026, 8, 20))).thenReturn(List.of());
+        when(projectEntryStatusService.getReference(600L)).thenReturn(newStatus);
+        when(timeEntryRepository.save(any(TimeEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest request =
+                new it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest(new BigDecimal("5"), null, 600L);
+
+        service.update(99L, 1L, request);
+
+        org.mockito.ArgumentCaptor<it.brunasti.mitire.backend.domain.TimeEntryTransition> captor =
+                org.mockito.ArgumentCaptor.forClass(it.brunasti.mitire.backend.domain.TimeEntryTransition.class);
+        org.mockito.Mockito.verify(timeEntryTransitionRepository).save(captor.capture());
+
+        it.brunasti.mitire.backend.domain.TimeEntryTransition transition = captor.getValue();
+        assertThat(transition.getTimeEntry()).isSameAs(entry);
+        assertThat(transition.getOldStatus()).isSameAs(oldStatus);
+        assertThat(transition.getNewStatus()).isSameAs(newStatus);
+        assertThat(transition.getChangedBy()).isSameAs(admin);
+    }
+
+    @Test
+    void updateWithUnchangedStatusDoesNotRecordTransition() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setUsername("admin");
+        admin.setRole(Role.ADMIN);
+
+        ProjectEntryStatus status = defaultStatus(project);
+
+        TimeEntry entry = new TimeEntry();
+        entry.setId(99L);
+        entry.setUser(admin);
+        entry.setProject(project);
+        entry.setWorkDate(LocalDate.of(2026, 8, 20));
+        entry.setHours(new BigDecimal("5"));
+        entry.setStatus(status);
+
+        when(userService.getReference(1L)).thenReturn(admin);
+        when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
+        when(timeEntryRepository.findByUserIdAndWorkDate(1L, LocalDate.of(2026, 8, 20))).thenReturn(List.of());
+        when(projectEntryStatusService.getReference(500L)).thenReturn(status);
+        when(timeEntryRepository.save(any(TimeEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest request =
+                new it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest(new BigDecimal("5"), null, 500L);
+
+        service.update(99L, 1L, request);
+
+        org.mockito.Mockito.verifyNoInteractions(timeEntryTransitionRepository);
+    }
+
+    @Test
     void createRejectsWhenUserHasNoAccessToProject() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -240,7 +329,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsWhenDailyTotalWouldExceed24Hours() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -267,7 +356,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsWorkDateOutsideProjectDateRange() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -290,7 +379,7 @@ class TimeEntryServiceTest {
 
     @Test
     void updateRejectsWhenDailyTotalWouldExceed24HoursExcludingItself() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
 
         User user = new User();
         user.setId(1L);

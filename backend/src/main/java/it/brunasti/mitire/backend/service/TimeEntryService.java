@@ -4,8 +4,10 @@ import it.brunasti.mitire.backend.domain.Project;
 import it.brunasti.mitire.backend.domain.ProjectEntryStatus;
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
+import it.brunasti.mitire.backend.domain.TimeEntryTransition;
 import it.brunasti.mitire.backend.domain.User;
 import it.brunasti.mitire.backend.repository.TimeEntryRepository;
+import it.brunasti.mitire.backend.repository.TimeEntryTransitionRepository;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
@@ -24,13 +26,16 @@ import java.util.NoSuchElementException;
 public class TimeEntryService {
 
     private final TimeEntryRepository timeEntryRepository;
+    private final TimeEntryTransitionRepository timeEntryTransitionRepository;
     private final UserService userService;
     private final ProjectService projectService;
     private final ProjectEntryStatusService projectEntryStatusService;
 
-    public TimeEntryService(TimeEntryRepository timeEntryRepository, UserService userService,
+    public TimeEntryService(TimeEntryRepository timeEntryRepository,
+                             TimeEntryTransitionRepository timeEntryTransitionRepository, UserService userService,
                              ProjectService projectService, ProjectEntryStatusService projectEntryStatusService) {
         this.timeEntryRepository = timeEntryRepository;
+        this.timeEntryTransitionRepository = timeEntryTransitionRepository;
         this.userService = userService;
         this.projectService = projectService;
         this.projectEntryStatusService = projectEntryStatusService;
@@ -79,7 +84,10 @@ public class TimeEntryService {
             if (!newStatus.getProject().getId().equals(entry.getProject().getId())) {
                 throw new IllegalArgumentException("Status does not belong to this entry's project");
             }
-            entry.setStatus(newStatus);
+            if (!newStatus.getId().equals(entry.getStatus().getId())) {
+                recordTransition(entry, entry.getStatus(), newStatus, requester);
+                entry.setStatus(newStatus);
+            }
         }
         return toDto(timeEntryRepository.save(entry));
     }
@@ -123,6 +131,16 @@ public class TimeEntryService {
         if (existingTotal.add(hours).compareTo(new BigDecimal("24")) > 0) {
             throw new IllegalArgumentException("Total hours for " + workDate + " can't exceed 24");
         }
+    }
+
+    private void recordTransition(TimeEntry entry, ProjectEntryStatus oldStatus, ProjectEntryStatus newStatus,
+                                   User changedBy) {
+        TimeEntryTransition transition = new TimeEntryTransition();
+        transition.setTimeEntry(entry);
+        transition.setOldStatus(oldStatus);
+        transition.setNewStatus(newStatus);
+        transition.setChangedBy(changedBy);
+        timeEntryTransitionRepository.save(transition);
     }
 
     private TimeEntry getReferenceChecked(Long id, Long requestingUserId) {

@@ -174,3 +174,13 @@ In the page http://localhost:8080/projects/<id> , in the tab Workflow, add to th
 IN the different lists, as the one in the http://localhost:8080/projects/<id> Workflow tab, the size of the coulmns should not be all the same, because many of the columns need less space.
 IN that cas efor example the columns "Order", "Active" and "Starting" can be smaller.
  
+
+---
+
+**2026-09-03 15:05:56**
+
+Create an extra table time_entry_transition which records, every time the status_id in the time_entry changes, the following info:
+- old_status
+- new_status
+- timestamp
+- user who created the change 
