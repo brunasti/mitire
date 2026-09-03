@@ -25,7 +25,6 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -125,6 +124,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         tabSheet.add("Users", buildUsersTab());
         tabSheet.add("Groups", buildGroupsTab());
         tabSheet.add("Workflow", buildStatusesTab());
+        tabSheet.add("Diagram", buildDiagramTab());
         tabSheet.setSizeFull();
 
         projectNameLabel.getStyle().set("font-weight", "bold").set("margin-left", "1rem");
@@ -336,7 +336,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         }
     }
 
-    private HorizontalLayout buildStatusesTab() {
+    private VerticalLayout buildStatusesTab() {
         TextField newStatusName = new TextField("Name");
         TextField newStatusDescription = new TextField("Description");
         Button add = new Button("Add", e -> addStatus(newStatusName, newStatusDescription));
@@ -361,19 +361,17 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             }
         });
 
-        VerticalLayout listColumn = new VerticalLayout(addForm, statusesGrid);
-        listColumn.setSizeFull();
-        listColumn.setPadding(false);
-
-        workflowDiagramContainer.setWidth("45%");
-
-        VerticalLayout diagramColumn = new VerticalLayout(new H3("Diagram"), workflowDiagramContainer);
-        diagramColumn.setPadding(false);
-        diagramColumn.setWidth("45%");
-
-        HorizontalLayout layout = new HorizontalLayout(listColumn, diagramColumn);
+        VerticalLayout layout = new VerticalLayout(addForm, statusesGrid);
         layout.setSizeFull();
-        layout.setFlexGrow(1, listColumn);
+        return layout;
+    }
+
+    private VerticalLayout buildDiagramTab() {
+        workflowDiagramContainer.setSizeFull();
+
+        VerticalLayout layout = new VerticalLayout(workflowDiagramContainer);
+        layout.setSizeFull();
+        layout.setPadding(false);
         return layout;
     }
 

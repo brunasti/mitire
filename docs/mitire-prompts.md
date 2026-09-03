@@ -232,3 +232,9 @@ IN the Filter per time, add the option to select a single day and a from - to pe
 
 Could you create a diagram of the workflow of the statuses of a given project?
 It would be useful to view it next to the Worflow tab into the http://localhost:8080/projects/<id>
+
+---
+
+**2026-09-03 17:57:46**
+
+The diagram is shown in a too little a frame. Can you create an extra tab with the diagram taking all the available space?
