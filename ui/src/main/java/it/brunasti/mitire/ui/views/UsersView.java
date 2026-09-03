@@ -93,10 +93,10 @@ public class UsersView extends VerticalLayout {
         grid.addColumn(UserDto::username).setHeader("Username").setSortable(true);
         grid.addColumn(UserDto::fullName).setHeader("Full name").setSortable(true);
         grid.addColumn(UserDto::email).setHeader("Email").setSortable(true);
-        grid.addColumn(UserDto::role).setHeader("Role").setSortable(true);
+        grid.addColumn(UserDto::role).setHeader("Role").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(u -> u.groups().stream().map(GroupDto::name).reduce((a, b) -> a + ", " + b).orElse("-"))
                 .setHeader("Groups").setSortable(true);
-        grid.addColumn(UserDto::enabled).setHeader("Enabled").setSortable(true);
+        grid.addColumn(UserDto::enabled).setHeader("Enabled").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));

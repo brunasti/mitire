@@ -132,13 +132,14 @@ public class TimeEntriesView extends VerticalLayout implements BeforeEnterObserv
     }
 
     private Grid<TimeEntryDto> buildGrid() {
-        grid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true);
+        grid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
-        grid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true);
-        grid.addColumn(TimeEntryDto::hours).setHeader("Hours");
+        grid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(TimeEntryDto::hours).setHeader("Hours").setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(TimeEntryDto::description).setHeader("Description");
         grid.addColumn(TimeEntryDto::statusName).setHeader("Status");
-        grid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true);
+        grid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true)
+                .setAutoWidth(true).setFlexGrow(0);
         grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));

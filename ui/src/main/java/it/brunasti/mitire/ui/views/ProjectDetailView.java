@@ -193,12 +193,13 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
     private VerticalLayout buildEntriesTab() {
         Grid.Column<TimeEntryDto> dateColumn = entriesGrid.addColumn(TimeEntryDto::workDate)
-                .setHeader("Date").setSortable(true);
+                .setHeader("Date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
-        entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
+        entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours").setAutoWidth(true).setFlexGrow(0);
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
         entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
-        entriesGrid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true);
+        entriesGrid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true)
+                .setAutoWidth(true).setFlexGrow(0);
         entriesGrid.setSizeFull();
         entriesGrid.getStyle().set("cursor", "pointer");
         entriesGrid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));
@@ -213,13 +214,13 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         usersGrid.addColumn(UserDto::username).setHeader("Username").setSortable(true);
         usersGrid.addColumn(UserDto::fullName).setHeader("Full name");
         usersGrid.addColumn(UserDto::email).setHeader("Email");
-        usersGrid.addColumn(UserDto::role).setHeader("Role");
+        usersGrid.addColumn(UserDto::role).setHeader("Role").setAutoWidth(true).setFlexGrow(0);
         usersGrid.addColumn(u -> u.groups().stream().map(GroupDto::name).reduce((a, b) -> a + ", " + b).orElse("-"))
                 .setHeader("Groups");
         usersGrid.addColumn(u -> currentApproverId != null && currentApproverId.equals(u.id()) ? "Yes" : "")
-                .setHeader("Approver");
+                .setHeader("Approver").setAutoWidth(true).setFlexGrow(0);
         usersGrid.addColumn(u -> currentOwnerId != null && currentOwnerId.equals(u.id()) ? "Yes" : "")
-                .setHeader("Owner");
+                .setHeader("Owner").setAutoWidth(true).setFlexGrow(0);
         usersGrid.setSizeFull();
         usersGrid.getStyle().set("cursor", "pointer");
         usersGrid.addItemClickListener(e -> UI.getCurrent().navigate(UserDetailView.class, e.getItem().id()));
@@ -320,11 +321,15 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         HorizontalLayout addForm = new HorizontalLayout(newStatusName, newStatusDescription, add);
         addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
 
-        statusesGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order");
+        statusesGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order").setAutoWidth(true).setFlexGrow(0);
         statusesGrid.addColumn(ProjectEntryStatusDto::name).setHeader("Name");
         statusesGrid.addColumn(ProjectEntryStatusDto::description).setHeader("Description");
-        statusesGrid.addColumn(ProjectEntryStatusDto::active).setHeader("Active");
-        statusesGrid.addColumn(ProjectEntryStatusDto::startingStatus).setHeader("Starting");
+        statusesGrid.addColumn(ProjectEntryStatusDto::active).setHeader("Active").setAutoWidth(true).setFlexGrow(0);
+        statusesGrid.addColumn(ProjectEntryStatusDto::startingStatus).setHeader("Starting").setAutoWidth(true).setFlexGrow(0);
+        statusesGrid.addColumn(status -> projectEntryStatusService.findChildren(projectId, status.id()).stream()
+                        .map(ProjectEntryStatusDto::name)
+                        .collect(Collectors.joining(", ")))
+                .setHeader("Next statuses");
         statusActionsColumn = statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
         statusesGrid.setSizeFull();
         statusesGrid.getStyle().set("cursor", "pointer");

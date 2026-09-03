@@ -94,7 +94,7 @@ public class GroupsView extends VerticalLayout {
 
     private Grid<GroupDto> buildGrid() {
         grid.addColumn(GroupDto::name).setHeader("Name").setSortable(true);
-        grid.addColumn(GroupDto::role).setHeader("Role").setSortable(true);
+        grid.addColumn(GroupDto::role).setHeader("Role").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(g -> g.projects().stream().map(ProjectDto::code).collect(Collectors.joining(", ")))
                 .setHeader("Projects").setSortable(true);
         grid.addColumn(g -> userService.findByGroup(g.id()).stream().map(UserDto::username)

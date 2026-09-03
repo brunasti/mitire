@@ -185,12 +185,13 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
     }
 
     private VerticalLayout buildEntriesTab() {
-        entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true);
+        entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
-        entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
+        entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours").setAutoWidth(true).setFlexGrow(0);
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
         entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
-        entriesGrid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true);
+        entriesGrid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true)
+                .setAutoWidth(true).setFlexGrow(0);
         entriesGrid.setSizeFull();
 
         VerticalLayout layout = new VerticalLayout(entriesGrid);
@@ -202,13 +203,13 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         usersGrid.addColumn(UserDto::username).setHeader("Username").setSortable(true);
         usersGrid.addColumn(UserDto::fullName).setHeader("Full name");
         usersGrid.addColumn(UserDto::email).setHeader("Email");
-        usersGrid.addColumn(UserDto::role).setHeader("Role");
+        usersGrid.addColumn(UserDto::role).setHeader("Role").setAutoWidth(true).setFlexGrow(0);
         usersGrid.addColumn(u -> u.groups().stream().map(GroupDto::name).reduce((a, b) -> a + ", " + b).orElse("-"))
                 .setHeader("Groups");
         usersGrid.addColumn(u -> currentApproverId != null && currentApproverId.equals(u.id()) ? "Yes" : "")
-                .setHeader("Approver");
+                .setHeader("Approver").setAutoWidth(true).setFlexGrow(0);
         usersGrid.addColumn(u -> currentOwnerId != null && currentOwnerId.equals(u.id()) ? "Yes" : "")
-                .setHeader("Owner");
+                .setHeader("Owner").setAutoWidth(true).setFlexGrow(0);
         usersGrid.setSizeFull();
 
         VerticalLayout layout = new VerticalLayout(usersGrid);
@@ -218,7 +219,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
 
     private VerticalLayout buildGroupsTab() {
         groupsGrid.addColumn(GroupDto::name).setHeader("Name").setSortable(true);
-        groupsGrid.addColumn(GroupDto::role).setHeader("Role");
+        groupsGrid.addColumn(GroupDto::role).setHeader("Role").setAutoWidth(true).setFlexGrow(0);
         groupsGrid.addColumn(g -> g.projects().stream().map(ProjectDto::code).collect(Collectors.joining(", ")))
                 .setHeader("Projects");
         groupsGrid.setSizeFull();
@@ -235,11 +236,11 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         HorizontalLayout addForm = new HorizontalLayout(newStatusName, newStatusDescription, add);
         addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
 
-        statusesGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order");
+        statusesGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order").setAutoWidth(true).setFlexGrow(0);
         statusesGrid.addColumn(ProjectEntryStatusDto::name).setHeader("Name");
         statusesGrid.addColumn(ProjectEntryStatusDto::description).setHeader("Description");
-        statusesGrid.addColumn(ProjectEntryStatusDto::active).setHeader("Active");
-        statusesGrid.addColumn(ProjectEntryStatusDto::startingStatus).setHeader("Starting");
+        statusesGrid.addColumn(ProjectEntryStatusDto::active).setHeader("Active").setAutoWidth(true).setFlexGrow(0);
+        statusesGrid.addColumn(ProjectEntryStatusDto::startingStatus).setHeader("Starting").setAutoWidth(true).setFlexGrow(0);
         statusActionsColumn = statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
         statusesGrid.setSizeFull();
         statusesGrid.getStyle().set("cursor", "pointer");
@@ -363,7 +364,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         ComboBox<ProjectEntryStatusDto> addChild = new ComboBox<>("Add depending status");
         addChild.setItemLabelGenerator(ProjectEntryStatusDto::name);
 
-        childrenGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order");
+        childrenGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order").setAutoWidth(true).setFlexGrow(0);
         childrenGrid.addColumn(ProjectEntryStatusDto::name).setHeader("Name");
         childrenGrid.addComponentColumn(child -> {
             Button remove = new Button(VaadinIcon.TRASH.create());

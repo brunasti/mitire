@@ -142,10 +142,10 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     }
 
     private VerticalLayout buildEntriesTab() {
-        entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true);
+        entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
-        entriesGrid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true);
-        entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
+        entriesGrid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours").setAutoWidth(true).setFlexGrow(0);
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
         entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
         entriesGrid.setSizeFull();
@@ -218,9 +218,9 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     }
 
     private VerticalLayout buildProjectsTab() {
-        projectsGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        projectsGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         projectsGrid.addColumn(ProjectDto::name).setHeader("Name");
-        projectsGrid.addColumn(ProjectDto::active).setHeader("Active");
+        projectsGrid.addColumn(ProjectDto::active).setHeader("Active").setAutoWidth(true).setFlexGrow(0);
         projectsGrid.setSizeFull();
         projectsGrid.getStyle().set("cursor", "pointer");
         projectsGrid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
@@ -231,9 +231,9 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     }
 
     private VerticalLayout buildApproverTab() {
-        approverGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        approverGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         approverGrid.addColumn(ProjectDto::name).setHeader("Name");
-        approverGrid.addColumn(ProjectDto::active).setHeader("Active");
+        approverGrid.addColumn(ProjectDto::active).setHeader("Active").setAutoWidth(true).setFlexGrow(0);
         approverGrid.setSizeFull();
         approverGrid.getStyle().set("cursor", "pointer");
         approverGrid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));
@@ -244,9 +244,9 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     }
 
     private VerticalLayout buildOwnerTab() {
-        ownerGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        ownerGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         ownerGrid.addColumn(ProjectDto::name).setHeader("Name");
-        ownerGrid.addColumn(ProjectDto::active).setHeader("Active");
+        ownerGrid.addColumn(ProjectDto::active).setHeader("Active").setAutoWidth(true).setFlexGrow(0);
         ownerGrid.setSizeFull();
         ownerGrid.getStyle().set("cursor", "pointer");
         ownerGrid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));

@@ -81,11 +81,11 @@ public class ProjectsView extends VerticalLayout {
     }
 
     private Grid<ProjectDto> buildGrid() {
-        grid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        grid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(ProjectDto::name).setHeader("Name").setSortable(true);
-        grid.addColumn(ProjectDto::active).setHeader("Active").setSortable(true);
-        grid.addColumn(ProjectDto::startDate).setHeader("Start date").setSortable(true);
-        grid.addColumn(ProjectDto::endDate).setHeader("End date").setSortable(true);
+        grid.addColumn(ProjectDto::active).setHeader("Active").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(ProjectDto::startDate).setHeader("Start date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(ProjectDto::endDate).setHeader("End date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(ProjectDetailView.class, e.getItem().id()));

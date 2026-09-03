@@ -29,11 +29,11 @@ public class ProjectsOverviewView extends VerticalLayout {
         H2 title = new H2("Projects");
 
         Grid<ProjectDto> grid = new Grid<>(ProjectDto.class, false);
-        grid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        grid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(ProjectDto::name).setHeader("Name").setSortable(true);
-        grid.addColumn(ProjectDto::active).setHeader("Active").setSortable(true);
-        grid.addColumn(ProjectDto::startDate).setHeader("Start date").setSortable(true);
-        grid.addColumn(ProjectDto::endDate).setHeader("End date").setSortable(true);
+        grid.addColumn(ProjectDto::active).setHeader("Active").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(ProjectDto::startDate).setHeader("Start date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
+        grid.addColumn(ProjectDto::endDate).setHeader("End date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.setItems(userService.findAccessibleProjects(currentUserId));
         grid.setSizeFull();
 

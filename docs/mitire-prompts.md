@@ -160,3 +160,17 @@ Rename all the tables and classes referring to time_entity or project_entity as 
 **2026-09-03 14:00:03**
 
 Add a field in the time_entry table for the timestamp of when it has been created.
+
+---
+
+**2026-09-03 14:19:37**
+
+In the page http://localhost:8080/projects/<id> , in the tab Workflow, add to the list a coulmn "Next statuses" populated with the corrisponding statuses as defined in the project_entry_status.
+
+---
+
+**2026-09-03 14:26:56**
+
+IN the different lists, as the one in the http://localhost:8080/projects/<id> Workflow tab, the size of the coulmns should not be all the same, because many of the columns need less space.
+IN that cas efor example the columns "Order", "Active" and "Starting" can be smaller.
+ 

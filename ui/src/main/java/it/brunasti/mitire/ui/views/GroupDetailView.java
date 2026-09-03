@@ -118,9 +118,9 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         HorizontalLayout addForm = new HorizontalLayout(addProject, add);
         addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
 
-        projectsGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        projectsGrid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         projectsGrid.addColumn(ProjectDto::name).setHeader("Name");
-        projectsGrid.addColumn(ProjectDto::active).setHeader("Active");
+        projectsGrid.addColumn(ProjectDto::active).setHeader("Active").setAutoWidth(true).setFlexGrow(0);
         projectActionsColumn = projectsGrid.addComponentColumn(this::buildRemoveProjectButton).setHeader("").setFlexGrow(0);
         projectsGrid.setSizeFull();
         projectsGrid.getStyle().set("cursor", "pointer");
@@ -143,8 +143,8 @@ public class GroupDetailView extends VerticalLayout implements HasUrlParameter<L
         usersGrid.addColumn(UserDto::username).setHeader("Username").setSortable(true);
         usersGrid.addColumn(UserDto::fullName).setHeader("Full name");
         usersGrid.addColumn(UserDto::email).setHeader("Email");
-        usersGrid.addColumn(UserDto::role).setHeader("Role");
-        usersGrid.addColumn(UserDto::enabled).setHeader("Enabled");
+        usersGrid.addColumn(UserDto::role).setHeader("Role").setAutoWidth(true).setFlexGrow(0);
+        usersGrid.addColumn(UserDto::enabled).setHeader("Enabled").setAutoWidth(true).setFlexGrow(0);
         userActionsColumn = usersGrid.addComponentColumn(this::buildRemoveUserButton).setHeader("").setFlexGrow(0);
         usersGrid.setSizeFull();
         usersGrid.getStyle().set("cursor", "pointer");

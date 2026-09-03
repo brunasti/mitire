@@ -30,9 +30,9 @@ public class MyProjectsView extends VerticalLayout {
         H2 title = new H2("My Projects");
 
         Grid<ProjectDto> grid = new Grid<>(ProjectDto.class, false);
-        grid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true);
+        grid.addColumn(ProjectDto::code).setHeader("Code").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(ProjectDto::name).setHeader("Name").setSortable(true);
-        grid.addColumn(ProjectDto::active).setHeader("Active");
+        grid.addColumn(ProjectDto::active).setHeader("Active").setAutoWidth(true).setFlexGrow(0);
         grid.setItems(projectService.findByOwner(currentUserId));
         grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");

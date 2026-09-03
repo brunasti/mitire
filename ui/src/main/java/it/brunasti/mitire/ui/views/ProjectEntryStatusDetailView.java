@@ -205,7 +205,7 @@ public class ProjectEntryStatusDetailView extends VerticalLayout implements HasU
         HorizontalLayout addForm = new HorizontalLayout(addChild, add);
         addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
 
-        childrenGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order");
+        childrenGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order").setAutoWidth(true).setFlexGrow(0);
         childrenGrid.addColumn(ProjectEntryStatusDto::name).setHeader("Name");
         childrenGrid.addColumn(ProjectEntryStatusDto::description).setHeader("Description");
         childActionsColumn = childrenGrid.addComponentColumn(this::buildRemoveChildButton).setHeader("").setFlexGrow(0);
