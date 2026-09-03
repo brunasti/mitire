@@ -24,6 +24,8 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -45,6 +47,7 @@ import com.vaadin.flow.spring.security.AuthenticationContext;
 import it.brunasti.mitire.ui.util.Formatters;
 import it.brunasti.mitire.ui.util.Notifications;
 import it.brunasti.mitire.ui.util.TimePeriodFilter;
+import it.brunasti.mitire.ui.util.WorkflowDiagram;
 import jakarta.annotation.security.RolesAllowed;
 
 import java.util.List;
@@ -78,6 +81,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
     private final Grid<ProjectEntryStatusDto> statusesGrid = new Grid<>(ProjectEntryStatusDto.class, false);
+    private final Div workflowDiagramContainer = new Div();
 
     private Grid.Column<GroupDto> groupActionsColumn;
     private Grid.Column<ProjectEntryStatusDto> statusActionsColumn;
@@ -332,7 +336,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         }
     }
 
-    private VerticalLayout buildStatusesTab() {
+    private HorizontalLayout buildStatusesTab() {
         TextField newStatusName = new TextField("Name");
         TextField newStatusDescription = new TextField("Description");
         Button add = new Button("Add", e -> addStatus(newStatusName, newStatusDescription));
@@ -357,8 +361,19 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             }
         });
 
-        VerticalLayout layout = new VerticalLayout(addForm, statusesGrid);
+        VerticalLayout listColumn = new VerticalLayout(addForm, statusesGrid);
+        listColumn.setSizeFull();
+        listColumn.setPadding(false);
+
+        workflowDiagramContainer.setWidth("45%");
+
+        VerticalLayout diagramColumn = new VerticalLayout(new H3("Diagram"), workflowDiagramContainer);
+        diagramColumn.setPadding(false);
+        diagramColumn.setWidth("45%");
+
+        HorizontalLayout layout = new HorizontalLayout(listColumn, diagramColumn);
         layout.setSizeFull();
+        layout.setFlexGrow(1, listColumn);
         return layout;
     }
 
@@ -480,6 +495,10 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     }
 
     private void refreshStatuses() {
-        statusesGrid.setItems(projectEntryStatusService.findByProject(projectId));
+        List<ProjectEntryStatusDto> statuses = projectEntryStatusService.findByProject(projectId);
+        statusesGrid.setItems(statuses);
+        workflowDiagramContainer.removeAll();
+        workflowDiagramContainer.add(WorkflowDiagram.build(statuses,
+                status -> projectEntryStatusService.findChildren(projectId, status.id())));
     }
 }

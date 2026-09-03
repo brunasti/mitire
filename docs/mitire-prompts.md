@@ -225,3 +225,10 @@ Add some Filters in this and all others Entries lists:
 **2026-09-03 17:03:38**
 
 IN the Filter per time, add the option to select a single day and a from - to period
+
+---
+
+**2026-09-03 17:26:09**
+
+Could you create a diagram of the workflow of the statuses of a given project?
+It would be useful to view it next to the Worflow tab into the http://localhost:8080/projects/<id>
