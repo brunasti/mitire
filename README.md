@@ -130,7 +130,7 @@ confirmation — the reciprocal of the Projects tab on a group's page), and **St
 
 Each time entry carries a status describing where it is in that **project's**
 approval flow. Unlike the fixed three-value status of earlier versions, the set of
-valid statuses is itself data: the `project_entity_status` table holds an ordered
+valid statuses is itself data: the `project_entry_status` table holds an ordered
 (`sequence`) list of named statuses **per project**, each with its own `active` flag,
 `description`, and a `starting_status` flag, managed by ADMIN from the **Statuses**
 tab on a project's detail page:
@@ -144,11 +144,11 @@ tab on a project's detail page:
 - **Reorder** with the up/down arrows (swaps `sequence` with the adjacent status)
 - **Set as starting** (star icon) — exactly one status per project is the starting
   one at any time; setting a new one automatically un-sets the previous one
-  (`ProjectEntityStatusService.setStarting()`)
+  (`ProjectEntryStatusService.setStarting()`)
 
 Every project is seeded with `SUBMITTED` (starting) → `APPROVED` → `REJECTED`, all
 active, when created (`ProjectService.create()` calls
-`ProjectEntityStatusService.seedDefaultStatuses()`).
+`ProjectEntryStatusService.seedDefaultStatuses()`).
 
 A new time entry always starts at its project's **starting** status (not merely the
 lowest-`sequence` one — the two can now diverge once ADMIN reassigns starting to a
@@ -165,13 +165,13 @@ authorization change hasn't been wired in yet.)
 
 ### Workflow (which status can follow which)
 
-The `project_entity_status_transition` table records, for a given status, which other
+The `project_entry_status_transition` table records, for a given status, which other
 statuses of the *same project* can be reached from it — a directed edge from a
 "parent" status to a "depending" (child) status. This is the workflow graph itself,
 separate from the flat status list: a status can have any number of depending
 statuses, and (via separate transition rows) could itself be reachable from more than
 one parent, so it's a general graph, not necessarily a simple tree — nothing in
-`ProjectEntityStatusService` assumes otherwise (no cycle detection, no single-parent
+`ProjectEntryStatusService` assumes otherwise (no cycle detection, no single-parent
 constraint), since none was asked for.
 
 Clicking a status row on a project's **Statuses** tab now opens `/statuses/{id}`, with
@@ -228,7 +228,7 @@ project's workflow — creating, renaming, deleting, or reordering its statuses,
 changing which one is the starting status, or changing which statuses are reachable
 from which — is restricted to **ADMIN or that project's Owner**; a plain member with
 ordinary access to the project cannot, even though they can view everything else about
-it. This is enforced in `ProjectEntityStatusService.requireWorkflowEditAccess()` on
+it. This is enforced in `ProjectEntryStatusService.requireWorkflowEditAccess()` on
 every mutating method (not just in a controller annotation), so it applies equally
 whether the call comes from the UI or directly through the REST API — a non-owner,
 non-admin caller gets a `403` with `"Only the project owner or an ADMIN can edit the
@@ -306,7 +306,7 @@ Clicking a row on the Time Entries tab (your own time entries) opens `/time-entr
 to edit it: Hours and Description are always editable; Status is an editable dropdown
 for ADMIN only (see "Approval status" above) and read-only text for everyone else. The
 dropdown's options are restricted to the entry's *current* status plus its direct
-depending statuses per the project's workflow graph (`ProjectEntityStatusService.findChildren()`
+depending statuses per the project's workflow graph (`ProjectEntryStatusService.findChildren()`
 — see "Workflow" above) — not every active status of the project — so ADMIN can only
 move an entry one step along its defined path at a time; a status with no depending
 statuses (nothing reachable from it) leaves the dropdown with just that one option. An

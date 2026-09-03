@@ -1,0 +1,2 @@
+alter table project_entity_status rename to project_entry_status;
+alter table project_entity_status_transition rename to project_entry_status_transition;

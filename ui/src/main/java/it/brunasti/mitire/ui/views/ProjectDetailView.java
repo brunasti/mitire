@@ -2,15 +2,15 @@ package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.service.GroupService;
 import it.brunasti.mitire.backend.service.ProjectService;
-import it.brunasti.mitire.backend.service.ProjectEntityStatusService;
+import it.brunasti.mitire.backend.service.ProjectEntryStatusService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
-import it.brunasti.mitire.backend.web.dto.CreateProjectEntityStatusRequest;
+import it.brunasti.mitire.backend.web.dto.CreateProjectEntryStatusRequest;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
-import it.brunasti.mitire.backend.web.dto.ProjectEntityStatusDto;
+import it.brunasti.mitire.backend.web.dto.ProjectEntryStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
-import it.brunasti.mitire.backend.web.dto.UpdateProjectEntityStatusRequest;
+import it.brunasti.mitire.backend.web.dto.UpdateProjectEntryStatusRequest;
 import it.brunasti.mitire.backend.web.dto.UpdateProjectRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.UI;
@@ -42,6 +42,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import it.brunasti.mitire.ui.util.Formatters;
 import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.RolesAllowed;
 
@@ -58,7 +59,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final TimeEntryService timeEntryService;
     private final UserService userService;
     private final GroupService groupService;
-    private final ProjectEntityStatusService projectEntityStatusService;
+    private final ProjectEntryStatusService projectEntryStatusService;
 
     private final TextField code = new TextField("Code");
     private final TextField name = new TextField("Name");
@@ -73,10 +74,10 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
-    private final Grid<ProjectEntityStatusDto> statusesGrid = new Grid<>(ProjectEntityStatusDto.class, false);
+    private final Grid<ProjectEntryStatusDto> statusesGrid = new Grid<>(ProjectEntryStatusDto.class, false);
 
     private Grid.Column<GroupDto> groupActionsColumn;
-    private Grid.Column<ProjectEntityStatusDto> statusActionsColumn;
+    private Grid.Column<ProjectEntryStatusDto> statusActionsColumn;
 
     private final Long currentUserId;
 
@@ -87,13 +88,13 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
     public ProjectDetailView(ProjectService projectService, TimeEntryService timeEntryService,
                               UserService userService, GroupService groupService,
-                              ProjectEntityStatusService projectEntityStatusService,
+                              ProjectEntryStatusService projectEntryStatusService,
                               AuthenticationContext authenticationContext) {
         this.projectService = projectService;
         this.timeEntryService = timeEntryService;
         this.userService = userService;
         this.groupService = groupService;
-        this.projectEntityStatusService = projectEntityStatusService;
+        this.projectEntryStatusService = projectEntryStatusService;
         this.currentUserId = authenticationContext.getPrincipalName()
                 .map(userService::getByUsername)
                 .map(UserDto::id)
@@ -197,6 +198,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
         entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
+        entriesGrid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true);
         entriesGrid.setSizeFull();
         entriesGrid.getStyle().set("cursor", "pointer");
         entriesGrid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));
@@ -318,17 +320,17 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         HorizontalLayout addForm = new HorizontalLayout(newStatusName, newStatusDescription, add);
         addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
 
-        statusesGrid.addColumn(ProjectEntityStatusDto::sequence).setHeader("Order");
-        statusesGrid.addColumn(ProjectEntityStatusDto::name).setHeader("Name");
-        statusesGrid.addColumn(ProjectEntityStatusDto::description).setHeader("Description");
-        statusesGrid.addColumn(ProjectEntityStatusDto::active).setHeader("Active");
-        statusesGrid.addColumn(ProjectEntityStatusDto::startingStatus).setHeader("Starting");
+        statusesGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order");
+        statusesGrid.addColumn(ProjectEntryStatusDto::name).setHeader("Name");
+        statusesGrid.addColumn(ProjectEntryStatusDto::description).setHeader("Description");
+        statusesGrid.addColumn(ProjectEntryStatusDto::active).setHeader("Active");
+        statusesGrid.addColumn(ProjectEntryStatusDto::startingStatus).setHeader("Starting");
         statusActionsColumn = statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
         statusesGrid.setSizeFull();
         statusesGrid.getStyle().set("cursor", "pointer");
         statusesGrid.addItemClickListener(e -> {
             if (e.getColumn() != statusActionsColumn) {
-                UI.getCurrent().navigate(ProjectEntityStatusDetailView.class, e.getItem().id());
+                UI.getCurrent().navigate(ProjectEntryStatusDetailView.class, e.getItem().id());
             }
         });
 
@@ -343,8 +345,8 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             return;
         }
         try {
-            projectEntityStatusService.create(projectId,
-                    new CreateProjectEntityStatusRequest(newStatusName.getValue(), newStatusDescription.getValue()),
+            projectEntryStatusService.create(projectId,
+                    new CreateProjectEntryStatusRequest(newStatusName.getValue(), newStatusDescription.getValue()),
                     currentUserId);
             newStatusName.clear();
             newStatusDescription.clear();
@@ -355,12 +357,12 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         }
     }
 
-    private HorizontalLayout buildStatusActions(ProjectEntityStatusDto status) {
+    private HorizontalLayout buildStatusActions(ProjectEntryStatusDto status) {
         Button up = new Button(VaadinIcon.ARROW_UP.create());
         up.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
         up.setTooltipText("Move up");
         up.addClickListener(e -> {
-            projectEntityStatusService.moveUp(projectId, status.id(), currentUserId);
+            projectEntryStatusService.moveUp(projectId, status.id(), currentUserId);
             refreshStatuses();
         });
 
@@ -368,7 +370,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         down.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
         down.setTooltipText("Move down");
         down.addClickListener(e -> {
-            projectEntityStatusService.moveDown(projectId, status.id(), currentUserId);
+            projectEntryStatusService.moveDown(projectId, status.id(), currentUserId);
             refreshStatuses();
         });
 
@@ -394,7 +396,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
             setStarting.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
             setStarting.setTooltipText("Set as starting status");
             setStarting.addClickListener(e -> {
-                projectEntityStatusService.setStarting(projectId, status.id(), currentUserId);
+                projectEntryStatusService.setStarting(projectId, status.id(), currentUserId);
                 refreshStatuses();
             });
             actions.addComponentAsFirst(setStarting);
@@ -403,7 +405,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         return actions;
     }
 
-    private void openEditStatusDialog(ProjectEntityStatusDto status) {
+    private void openEditStatusDialog(ProjectEntryStatusDto status) {
         TextField editName = new TextField("Name");
         editName.setValue(status.name());
         TextField editDescription = new TextField("Description");
@@ -416,7 +418,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
 
         Button save = new Button("Save", e -> {
             try {
-                projectEntityStatusService.update(projectId, status.id(), new UpdateProjectEntityStatusRequest(
+                projectEntryStatusService.update(projectId, status.id(), new UpdateProjectEntryStatusRequest(
                         editName.getValue(), editDescription.getValue(), editActive.getValue()), currentUserId);
                 refreshStatuses();
                 dialog.close();
@@ -433,7 +435,7 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         dialog.open();
     }
 
-    private void confirmDeleteStatus(ProjectEntityStatusDto status) {
+    private void confirmDeleteStatus(ProjectEntryStatusDto status) {
         ConfirmDialog dialog = new ConfirmDialog(
                 "Delete status",
                 "Delete status '" + status.name() + "'? This can't be undone.",
@@ -444,9 +446,9 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
         dialog.open();
     }
 
-    private void deleteStatus(ProjectEntityStatusDto status) {
+    private void deleteStatus(ProjectEntryStatusDto status) {
         try {
-            projectEntityStatusService.delete(projectId, status.id(), currentUserId);
+            projectEntryStatusService.delete(projectId, status.id(), currentUserId);
             refreshStatuses();
             Notification.show("Status deleted").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
@@ -455,6 +457,6 @@ public class ProjectDetailView extends VerticalLayout implements HasUrlParameter
     }
 
     private void refreshStatuses() {
-        statusesGrid.setItems(projectEntityStatusService.findByProject(projectId));
+        statusesGrid.setItems(projectEntryStatusService.findByProject(projectId));
     }
 }

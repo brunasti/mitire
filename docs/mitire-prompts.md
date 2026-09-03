@@ -148,3 +148,15 @@ By the way, could you rename the tab "Statuses" into "Workflow" ?
 **2026-09-03 13:36:35**
 
 Please: change the font of the system, from the current (I think Times new Roman), to a one without serif, as Tahoma.
+
+---
+
+**2026-09-03 13:49:10**
+
+Rename all the tables and classes referring to time_entity or project_entity as "entry" instead of "entity".
+
+---
+
+**2026-09-03 14:00:03**
+
+Add a field in the time_entry table for the timestamp of when it has been created.

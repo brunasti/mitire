@@ -21,13 +21,13 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
-    private final ProjectEntityStatusService projectEntityStatusService;
+    private final ProjectEntryStatusService projectEntryStatusService;
 
     public ProjectService(ProjectRepository projectRepository, UserRepository userRepository,
-                           ProjectEntityStatusService projectEntityStatusService) {
+                           ProjectEntryStatusService projectEntryStatusService) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
-        this.projectEntityStatusService = projectEntityStatusService;
+        this.projectEntryStatusService = projectEntryStatusService;
     }
 
     @Transactional(readOnly = true)
@@ -56,7 +56,7 @@ public class ProjectService {
         project.setStartDate(request.startDate());
         project.setEndDate(request.endDate());
         Project saved = projectRepository.save(project);
-        projectEntityStatusService.seedDefaultStatuses(saved);
+        projectEntryStatusService.seedDefaultStatuses(saved);
         return toDto(saved);
     }
 

@@ -38,7 +38,7 @@ public class TimeEntry {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "status_id", nullable = false)
-    private ProjectEntityStatus status;
+    private ProjectEntryStatus status;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();

@@ -2,16 +2,16 @@ package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.service.GroupService;
-import it.brunasti.mitire.backend.service.ProjectEntityStatusService;
+import it.brunasti.mitire.backend.service.ProjectEntryStatusService;
 import it.brunasti.mitire.backend.service.ProjectService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
-import it.brunasti.mitire.backend.web.dto.CreateProjectEntityStatusRequest;
+import it.brunasti.mitire.backend.web.dto.CreateProjectEntryStatusRequest;
 import it.brunasti.mitire.backend.web.dto.GroupDto;
 import it.brunasti.mitire.backend.web.dto.ProjectDto;
-import it.brunasti.mitire.backend.web.dto.ProjectEntityStatusDto;
+import it.brunasti.mitire.backend.web.dto.ProjectEntryStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
-import it.brunasti.mitire.backend.web.dto.UpdateProjectEntityStatusRequest;
+import it.brunasti.mitire.backend.web.dto.UpdateProjectEntryStatusRequest;
 import it.brunasti.mitire.backend.web.dto.UserDto;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -39,6 +39,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import it.brunasti.mitire.ui.util.Formatters;
 import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.security.access.AccessDeniedException;
@@ -63,7 +64,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
     private final TimeEntryService timeEntryService;
     private final UserService userService;
     private final GroupService groupService;
-    private final ProjectEntityStatusService projectEntityStatusService;
+    private final ProjectEntryStatusService projectEntryStatusService;
     private final Long currentUserId;
     private final Role currentUserRole;
 
@@ -79,9 +80,9 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
-    private final Grid<ProjectEntityStatusDto> statusesGrid = new Grid<>(ProjectEntityStatusDto.class, false);
+    private final Grid<ProjectEntryStatusDto> statusesGrid = new Grid<>(ProjectEntryStatusDto.class, false);
 
-    private Grid.Column<ProjectEntityStatusDto> statusActionsColumn;
+    private Grid.Column<ProjectEntryStatusDto> statusActionsColumn;
 
     private Long projectId;
     private Long currentApproverId;
@@ -89,13 +90,13 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
 
     public ProjectWorkflowView(ProjectService projectService, TimeEntryService timeEntryService,
                                 UserService userService, GroupService groupService,
-                                ProjectEntityStatusService projectEntityStatusService,
+                                ProjectEntryStatusService projectEntryStatusService,
                                 AuthenticationContext authenticationContext) {
         this.projectService = projectService;
         this.timeEntryService = timeEntryService;
         this.userService = userService;
         this.groupService = groupService;
-        this.projectEntityStatusService = projectEntityStatusService;
+        this.projectEntryStatusService = projectEntryStatusService;
         UserDto currentUser = authenticationContext.getPrincipalName()
                 .map(userService::getByUsername)
                 .orElseThrow();
@@ -189,6 +190,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         entriesGrid.addColumn(TimeEntryDto::description).setHeader("Description");
         entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
+        entriesGrid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true);
         entriesGrid.setSizeFull();
 
         VerticalLayout layout = new VerticalLayout(entriesGrid);
@@ -233,11 +235,11 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         HorizontalLayout addForm = new HorizontalLayout(newStatusName, newStatusDescription, add);
         addForm.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
 
-        statusesGrid.addColumn(ProjectEntityStatusDto::sequence).setHeader("Order");
-        statusesGrid.addColumn(ProjectEntityStatusDto::name).setHeader("Name");
-        statusesGrid.addColumn(ProjectEntityStatusDto::description).setHeader("Description");
-        statusesGrid.addColumn(ProjectEntityStatusDto::active).setHeader("Active");
-        statusesGrid.addColumn(ProjectEntityStatusDto::startingStatus).setHeader("Starting");
+        statusesGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order");
+        statusesGrid.addColumn(ProjectEntryStatusDto::name).setHeader("Name");
+        statusesGrid.addColumn(ProjectEntryStatusDto::description).setHeader("Description");
+        statusesGrid.addColumn(ProjectEntryStatusDto::active).setHeader("Active");
+        statusesGrid.addColumn(ProjectEntryStatusDto::startingStatus).setHeader("Starting");
         statusActionsColumn = statusesGrid.addComponentColumn(this::buildStatusActions).setHeader("").setFlexGrow(0);
         statusesGrid.setSizeFull();
         statusesGrid.getStyle().set("cursor", "pointer");
@@ -258,8 +260,8 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
             return;
         }
         try {
-            projectEntityStatusService.create(projectId,
-                    new CreateProjectEntityStatusRequest(newStatusName.getValue(), newStatusDescription.getValue()),
+            projectEntryStatusService.create(projectId,
+                    new CreateProjectEntryStatusRequest(newStatusName.getValue(), newStatusDescription.getValue()),
                     currentUserId);
             newStatusName.clear();
             newStatusDescription.clear();
@@ -270,12 +272,12 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         }
     }
 
-    private HorizontalLayout buildStatusActions(ProjectEntityStatusDto status) {
+    private HorizontalLayout buildStatusActions(ProjectEntryStatusDto status) {
         Button up = new Button(VaadinIcon.ARROW_UP.create());
         up.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
         up.setTooltipText("Move up");
         up.addClickListener(e -> {
-            projectEntityStatusService.moveUp(projectId, status.id(), currentUserId);
+            projectEntryStatusService.moveUp(projectId, status.id(), currentUserId);
             refreshStatuses();
         });
 
@@ -283,7 +285,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         down.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
         down.setTooltipText("Move down");
         down.addClickListener(e -> {
-            projectEntityStatusService.moveDown(projectId, status.id(), currentUserId);
+            projectEntryStatusService.moveDown(projectId, status.id(), currentUserId);
             refreshStatuses();
         });
 
@@ -314,7 +316,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
             setStarting.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON);
             setStarting.setTooltipText("Set as starting status");
             setStarting.addClickListener(e -> {
-                projectEntityStatusService.setStarting(projectId, status.id(), currentUserId);
+                projectEntryStatusService.setStarting(projectId, status.id(), currentUserId);
                 refreshStatuses();
             });
             actions.addComponentAsFirst(setStarting);
@@ -323,7 +325,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         return actions;
     }
 
-    private void openEditStatusDialog(ProjectEntityStatusDto status) {
+    private void openEditStatusDialog(ProjectEntryStatusDto status) {
         TextField editName = new TextField("Name");
         editName.setValue(status.name());
         TextField editDescription = new TextField("Description");
@@ -336,7 +338,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
 
         Button save = new Button("Save", e -> {
             try {
-                projectEntityStatusService.update(projectId, status.id(), new UpdateProjectEntityStatusRequest(
+                projectEntryStatusService.update(projectId, status.id(), new UpdateProjectEntryStatusRequest(
                         editName.getValue(), editDescription.getValue(), editActive.getValue()), currentUserId);
                 refreshStatuses();
                 dialog.close();
@@ -353,22 +355,22 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         dialog.open();
     }
 
-    private void openDependenciesDialog(ProjectEntityStatusDto status) {
+    private void openDependenciesDialog(ProjectEntryStatusDto status) {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Depending statuses for '" + status.name() + "'");
 
-        Grid<ProjectEntityStatusDto> childrenGrid = new Grid<>(ProjectEntityStatusDto.class, false);
-        ComboBox<ProjectEntityStatusDto> addChild = new ComboBox<>("Add depending status");
-        addChild.setItemLabelGenerator(ProjectEntityStatusDto::name);
+        Grid<ProjectEntryStatusDto> childrenGrid = new Grid<>(ProjectEntryStatusDto.class, false);
+        ComboBox<ProjectEntryStatusDto> addChild = new ComboBox<>("Add depending status");
+        addChild.setItemLabelGenerator(ProjectEntryStatusDto::name);
 
-        childrenGrid.addColumn(ProjectEntityStatusDto::sequence).setHeader("Order");
-        childrenGrid.addColumn(ProjectEntityStatusDto::name).setHeader("Name");
+        childrenGrid.addColumn(ProjectEntryStatusDto::sequence).setHeader("Order");
+        childrenGrid.addColumn(ProjectEntryStatusDto::name).setHeader("Name");
         childrenGrid.addComponentColumn(child -> {
             Button remove = new Button(VaadinIcon.TRASH.create());
             remove.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ICON, ButtonVariant.LUMO_ERROR);
             remove.setTooltipText("Remove dependency");
             remove.addClickListener(e -> {
-                projectEntityStatusService.removeChild(projectId, status.id(), child.id(), currentUserId);
+                projectEntryStatusService.removeChild(projectId, status.id(), child.id(), currentUserId);
                 loadDependencies(status, childrenGrid, addChild);
             });
             return remove;
@@ -377,12 +379,12 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         childrenGrid.setHeight("250px");
 
         Button add = new Button("Add", e -> {
-            ProjectEntityStatusDto selected = addChild.getValue();
+            ProjectEntryStatusDto selected = addChild.getValue();
             if (selected == null) {
                 Notifications.showError("Select a status to add");
                 return;
             }
-            projectEntityStatusService.addChild(projectId, status.id(), selected.id(), currentUserId);
+            projectEntryStatusService.addChild(projectId, status.id(), selected.id(), currentUserId);
             loadDependencies(status, childrenGrid, addChild);
         });
         HorizontalLayout addForm = new HorizontalLayout(addChild, add);
@@ -402,11 +404,11 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         dialog.open();
     }
 
-    private void loadDependencies(ProjectEntityStatusDto status, Grid<ProjectEntityStatusDto> childrenGrid,
-                                   ComboBox<ProjectEntityStatusDto> addChild) {
-        List<ProjectEntityStatusDto> children = projectEntityStatusService.findChildren(projectId, status.id());
+    private void loadDependencies(ProjectEntryStatusDto status, Grid<ProjectEntryStatusDto> childrenGrid,
+                                   ComboBox<ProjectEntryStatusDto> addChild) {
+        List<ProjectEntryStatusDto> children = projectEntryStatusService.findChildren(projectId, status.id());
         childrenGrid.setItems(children);
-        List<ProjectEntityStatusDto> allStatuses = projectEntityStatusService.findByProject(projectId);
+        List<ProjectEntryStatusDto> allStatuses = projectEntryStatusService.findByProject(projectId);
         addChild.clear();
         addChild.setItems(allStatuses.stream()
                 .filter(s -> !s.id().equals(status.id()))
@@ -414,7 +416,7 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
                 .toList());
     }
 
-    private void confirmDeleteStatus(ProjectEntityStatusDto status) {
+    private void confirmDeleteStatus(ProjectEntryStatusDto status) {
         ConfirmDialog dialog = new ConfirmDialog(
                 "Delete status",
                 "Delete status '" + status.name() + "'? This can't be undone.",
@@ -425,9 +427,9 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         dialog.open();
     }
 
-    private void deleteStatus(ProjectEntityStatusDto status) {
+    private void deleteStatus(ProjectEntryStatusDto status) {
         try {
-            projectEntityStatusService.delete(projectId, status.id(), currentUserId);
+            projectEntryStatusService.delete(projectId, status.id(), currentUserId);
             refreshStatuses();
             Notification.show("Status deleted").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } catch (IllegalArgumentException ex) {
@@ -436,6 +438,6 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
     }
 
     private void refreshStatuses() {
-        statusesGrid.setItems(projectEntityStatusService.findByProject(projectId));
+        statusesGrid.setItems(projectEntryStatusService.findByProject(projectId));
     }
 }

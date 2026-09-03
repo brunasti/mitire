@@ -6,11 +6,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "project_entity_status")
+@Table(name = "project_entry_status")
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProjectEntityStatus {
+public class ProjectEntryStatus {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

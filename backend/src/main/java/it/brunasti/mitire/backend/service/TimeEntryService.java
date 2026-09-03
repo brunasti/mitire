@@ -1,7 +1,7 @@
 package it.brunasti.mitire.backend.service;
 
 import it.brunasti.mitire.backend.domain.Project;
-import it.brunasti.mitire.backend.domain.ProjectEntityStatus;
+import it.brunasti.mitire.backend.domain.ProjectEntryStatus;
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
 import it.brunasti.mitire.backend.domain.User;
@@ -26,14 +26,14 @@ public class TimeEntryService {
     private final TimeEntryRepository timeEntryRepository;
     private final UserService userService;
     private final ProjectService projectService;
-    private final ProjectEntityStatusService projectEntityStatusService;
+    private final ProjectEntryStatusService projectEntryStatusService;
 
     public TimeEntryService(TimeEntryRepository timeEntryRepository, UserService userService,
-                             ProjectService projectService, ProjectEntityStatusService projectEntityStatusService) {
+                             ProjectService projectService, ProjectEntryStatusService projectEntryStatusService) {
         this.timeEntryRepository = timeEntryRepository;
         this.userService = userService;
         this.projectService = projectService;
-        this.projectEntityStatusService = projectEntityStatusService;
+        this.projectEntryStatusService = projectEntryStatusService;
     }
 
     public TimeEntryDto create(CreateTimeEntryRequest request) {
@@ -55,7 +55,7 @@ public class TimeEntryService {
         entry.setWorkDate(request.workDate());
         entry.setHours(request.hours());
         entry.setDescription(request.description());
-        entry.setStatus(projectEntityStatusService.getDefaultForProject(project.getId()));
+        entry.setStatus(projectEntryStatusService.getDefaultForProject(project.getId()));
 
         return toDto(timeEntryRepository.save(entry));
     }
@@ -75,7 +75,7 @@ public class TimeEntryService {
             if (Role.effectiveFor(requester, entry.getProject()) != Role.ADMIN) {
                 throw new AccessDeniedException("Only an ADMIN can change the status of a time entry");
             }
-            ProjectEntityStatus newStatus = projectEntityStatusService.getReference(request.statusId());
+            ProjectEntryStatus newStatus = projectEntryStatusService.getReference(request.statusId());
             if (!newStatus.getProject().getId().equals(entry.getProject().getId())) {
                 throw new IllegalArgumentException("Status does not belong to this entry's project");
             }
@@ -148,7 +148,8 @@ public class TimeEntryService {
                 entry.getHours(),
                 entry.getDescription(),
                 entry.getStatus().getId(),
-                entry.getStatus().getName()
+                entry.getStatus().getName(),
+                entry.getCreatedAt()
         );
     }
 }

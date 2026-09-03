@@ -1,6 +1,7 @@
 package it.brunasti.mitire.backend.web.dto;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 public record TimeEntryDto(
@@ -14,6 +15,7 @@ public record TimeEntryDto(
         BigDecimal hours,
         String description,
         Long statusId,
-        String statusName
+        String statusName,
+        Instant createdAt
 ) {
 }

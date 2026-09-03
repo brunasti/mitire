@@ -26,6 +26,7 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import it.brunasti.mitire.ui.util.Formatters;
 import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.security.access.AccessDeniedException;
@@ -137,6 +138,7 @@ public class TimeEntriesView extends VerticalLayout implements BeforeEnterObserv
         grid.addColumn(TimeEntryDto::hours).setHeader("Hours");
         grid.addColumn(TimeEntryDto::description).setHeader("Description");
         grid.addColumn(TimeEntryDto::statusName).setHeader("Status");
+        grid.addColumn(e -> Formatters.timestamp(e.createdAt())).setHeader("Created").setSortable(true);
         grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));

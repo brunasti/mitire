@@ -2,7 +2,7 @@ package it.brunasti.mitire.backend.service;
 
 import it.brunasti.mitire.backend.domain.Group;
 import it.brunasti.mitire.backend.domain.Project;
-import it.brunasti.mitire.backend.domain.ProjectEntityStatus;
+import it.brunasti.mitire.backend.domain.ProjectEntryStatus;
 import it.brunasti.mitire.backend.domain.Role;
 import it.brunasti.mitire.backend.domain.TimeEntry;
 import it.brunasti.mitire.backend.domain.User;
@@ -36,10 +36,10 @@ class TimeEntryServiceTest {
     @Mock
     private ProjectService projectService;
     @Mock
-    private ProjectEntityStatusService projectEntityStatusService;
+    private ProjectEntryStatusService projectEntryStatusService;
 
-    private static ProjectEntityStatus defaultStatus(Project project) {
-        ProjectEntityStatus status = new ProjectEntityStatus();
+    private static ProjectEntryStatus defaultStatus(Project project) {
+        ProjectEntryStatus status = new ProjectEntryStatus();
         status.setId(500L);
         status.setProject(project);
         status.setName("SUBMITTED");
@@ -49,7 +49,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createPersistsAndReturnsDtoWhenUserHasProjectAccessThroughGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -68,7 +68,7 @@ class TimeEntryServiceTest {
 
         when(userService.getReference(1L)).thenReturn(user);
         when(projectService.getReference(2L)).thenReturn(project);
-        when(projectEntityStatusService.getDefaultForProject(2L)).thenReturn(defaultStatus(project));
+        when(projectEntryStatusService.getDefaultForProject(2L)).thenReturn(defaultStatus(project));
         lenient().when(timeEntryRepository.save(any(TimeEntry.class))).thenAnswer(invocation -> {
             TimeEntry entry = invocation.getArgument(0);
             entry.setId(99L);
@@ -87,7 +87,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createSucceedsForAdminRegardlessOfGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -100,7 +100,7 @@ class TimeEntryServiceTest {
 
         when(userService.getReference(1L)).thenReturn(admin);
         when(projectService.getReference(2L)).thenReturn(project);
-        when(projectEntityStatusService.getDefaultForProject(2L)).thenReturn(defaultStatus(project));
+        when(projectEntryStatusService.getDefaultForProject(2L)).thenReturn(defaultStatus(project));
         when(timeEntryRepository.save(any(TimeEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         CreateTimeEntryRequest request = new CreateTimeEntryRequest(1L, 2L, LocalDate.of(2026, 8, 20), new BigDecimal("2"), null);
@@ -110,7 +110,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsForViewerInAViewerRoleGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -138,7 +138,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createSucceedsForViewerElevatedByMemberRoleGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -158,7 +158,7 @@ class TimeEntryServiceTest {
 
         when(userService.getReference(1L)).thenReturn(viewer);
         when(projectService.getReference(2L)).thenReturn(project);
-        when(projectEntityStatusService.getDefaultForProject(2L)).thenReturn(defaultStatus(project));
+        when(projectEntryStatusService.getDefaultForProject(2L)).thenReturn(defaultStatus(project));
         when(timeEntryRepository.save(any(TimeEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         CreateTimeEntryRequest request = new CreateTimeEntryRequest(1L, 2L, LocalDate.of(2026, 8, 20), new BigDecimal("2"), null);
@@ -168,7 +168,7 @@ class TimeEntryServiceTest {
 
     @Test
     void updateStatusSucceedsForNonAdminUserElevatedToAdminByGroup() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -190,7 +190,7 @@ class TimeEntryServiceTest {
         entryOwner.setId(2L);
         entryOwner.setUsername("alice");
 
-        ProjectEntityStatus newStatus = new ProjectEntityStatus();
+        ProjectEntryStatus newStatus = new ProjectEntryStatus();
         newStatus.setId(600L);
         newStatus.setProject(project);
         newStatus.setName("APPROVED");
@@ -206,7 +206,7 @@ class TimeEntryServiceTest {
         when(userService.getReference(1L)).thenReturn(approver);
         when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
         when(timeEntryRepository.findByUserIdAndWorkDate(2L, LocalDate.of(2026, 8, 20))).thenReturn(List.of());
-        when(projectEntityStatusService.getReference(600L)).thenReturn(newStatus);
+        when(projectEntryStatusService.getReference(600L)).thenReturn(newStatus);
         when(timeEntryRepository.save(any(TimeEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest request =
@@ -219,7 +219,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsWhenUserHasNoAccessToProject() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -240,7 +240,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsWhenDailyTotalWouldExceed24Hours() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -267,7 +267,7 @@ class TimeEntryServiceTest {
 
     @Test
     void createRejectsWorkDateOutsideProjectDateRange() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         Project project = new Project();
         project.setId(2L);
@@ -290,7 +290,7 @@ class TimeEntryServiceTest {
 
     @Test
     void updateRejectsWhenDailyTotalWouldExceed24HoursExcludingItself() {
-        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntityStatusService);
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, userService, projectService, projectEntryStatusService);
 
         User user = new User();
         user.setId(1L);

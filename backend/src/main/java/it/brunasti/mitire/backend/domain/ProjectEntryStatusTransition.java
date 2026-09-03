@@ -6,11 +6,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "project_entity_status_transition")
+@Table(name = "project_entry_status_transition")
 @Getter
 @Setter
 @NoArgsConstructor
-public class ProjectEntityStatusTransition {
+public class ProjectEntryStatusTransition {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,9 +18,9 @@ public class ProjectEntityStatusTransition {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "parent_status_id", nullable = false)
-    private ProjectEntityStatus parentStatus;
+    private ProjectEntryStatus parentStatus;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "child_status_id", nullable = false)
-    private ProjectEntityStatus childStatus;
+    private ProjectEntryStatus childStatus;
 }

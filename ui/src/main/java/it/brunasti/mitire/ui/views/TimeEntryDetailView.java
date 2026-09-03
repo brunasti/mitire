@@ -1,10 +1,10 @@
 package it.brunasti.mitire.ui.views;
 
 import it.brunasti.mitire.backend.domain.Role;
-import it.brunasti.mitire.backend.service.ProjectEntityStatusService;
+import it.brunasti.mitire.backend.service.ProjectEntryStatusService;
 import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
-import it.brunasti.mitire.backend.web.dto.ProjectEntityStatusDto;
+import it.brunasti.mitire.backend.web.dto.ProjectEntryStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import com.vaadin.flow.component.UI;
@@ -28,6 +28,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.security.AuthenticationContext;
+import it.brunasti.mitire.ui.util.Formatters;
 import it.brunasti.mitire.ui.util.Notifications;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.security.access.AccessDeniedException;
@@ -43,7 +44,7 @@ import java.util.stream.Stream;
 public class TimeEntryDetailView extends VerticalLayout implements HasUrlParameter<Long> {
 
     private final TimeEntryService timeEntryService;
-    private final ProjectEntityStatusService projectEntityStatusService;
+    private final ProjectEntryStatusService projectEntryStatusService;
     private final UserService userService;
     private final Long currentUserId;
     private final Role currentUserRole;
@@ -51,17 +52,18 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
     private final Div projectField = new Div();
     private final RouterLink userLink = new RouterLink();
     private final TextField workDate = new TextField("Date");
+    private final TextField createdAt = new TextField("Created");
     private final Div statusField = new Div();
     private final NumberField hours = new NumberField("Hours");
     private final TextField description = new TextField("Description");
 
-    private ComboBox<ProjectEntityStatusDto> statusComboBox;
+    private ComboBox<ProjectEntryStatusDto> statusComboBox;
     private Long entryId;
 
-    public TimeEntryDetailView(TimeEntryService timeEntryService, ProjectEntityStatusService projectEntityStatusService,
+    public TimeEntryDetailView(TimeEntryService timeEntryService, ProjectEntryStatusService projectEntryStatusService,
                                 UserService userService, AuthenticationContext authenticationContext) {
         this.timeEntryService = timeEntryService;
-        this.projectEntityStatusService = projectEntityStatusService;
+        this.projectEntryStatusService = projectEntryStatusService;
         var currentUser = authenticationContext.getPrincipalName()
                 .map(userService::getByUsername)
                 .orElseThrow();
@@ -70,6 +72,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         this.userService = userService;
 
         workDate.setReadOnly(true);
+        createdAt.setReadOnly(true);
         hours.setStep(0.25);
         hours.setMin(0.25);
         hours.setMax(24);
@@ -95,6 +98,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
                 userLink.setRoute(UserDetailView.class, entry.userId());
             }
             workDate.setValue(entry.workDate().toString());
+            createdAt.setValue(Formatters.timestamp(entry.createdAt()));
             hours.setValue(entry.hours().doubleValue());
             description.setValue(entry.description() != null ? entry.description() : "");
 
@@ -102,15 +106,15 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
 
             statusField.removeAll();
             if (isProjectAdmin) {
-                ProjectEntityStatusDto currentStatus = projectEntityStatusService.findById(entry.projectId(), entry.statusId());
-                List<ProjectEntityStatusDto> children = projectEntityStatusService.findChildren(entry.projectId(), entry.statusId());
-                List<ProjectEntityStatusDto> selectable = Stream.concat(Stream.of(currentStatus), children.stream())
+                ProjectEntryStatusDto currentStatus = projectEntryStatusService.findById(entry.projectId(), entry.statusId());
+                List<ProjectEntryStatusDto> children = projectEntryStatusService.findChildren(entry.projectId(), entry.statusId());
+                List<ProjectEntryStatusDto> selectable = Stream.concat(Stream.of(currentStatus), children.stream())
                         .filter(s -> s.active() || s.id().equals(entry.statusId()))
                         .distinct()
                         .toList();
                 statusComboBox = new ComboBox<>();
                 statusComboBox.setItems(selectable);
-                statusComboBox.setItemLabelGenerator(ProjectEntityStatusDto::name);
+                statusComboBox.setItemLabelGenerator(ProjectEntryStatusDto::name);
                 selectable.stream().filter(s -> s.id().equals(entry.statusId())).findFirst()
                         .ifPresent(statusComboBox::setValue);
                 statusField.add(statusComboBox);
@@ -136,7 +140,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         form.addFormItem(projectField, "Project");
         form.addFormItem(userLink, "User");
         form.addFormItem(statusField, "Status");
-        form.add(workDate, hours, description);
+        form.add(workDate, createdAt, hours, description);
         form.add(new HorizontalLayout(save, cancel, delete));
         form.setMaxWidth("600px");
         return form;
