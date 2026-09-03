@@ -4,6 +4,7 @@ import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.TimeEntryTransitionDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -57,6 +58,11 @@ public class TimeEntryController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, Authentication authentication) {
         timeEntryService.delete(id, resolveUserId(authentication));
+    }
+
+    @GetMapping("/{id}/transitions")
+    public List<TimeEntryTransitionDto> findTransitions(@PathVariable Long id, Authentication authentication) {
+        return timeEntryService.findTransitions(id, resolveUserId(authentication));
     }
 
     private Long resolveUserId(Authentication authentication) {

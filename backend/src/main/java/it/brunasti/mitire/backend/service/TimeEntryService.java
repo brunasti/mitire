@@ -10,6 +10,7 @@ import it.brunasti.mitire.backend.repository.TimeEntryRepository;
 import it.brunasti.mitire.backend.repository.TimeEntryTransitionRepository;
 import it.brunasti.mitire.backend.web.dto.CreateTimeEntryRequest;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.TimeEntryTransitionDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
@@ -97,6 +98,14 @@ public class TimeEntryService {
     }
 
     @Transactional(readOnly = true)
+    public List<TimeEntryTransitionDto> findTransitions(Long id, Long requestingUserId) {
+        TimeEntry entry = getReferenceChecked(id, requestingUserId);
+        return timeEntryTransitionRepository.findByTimeEntryIdOrderByCreatedAtDesc(entry.getId()).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<TimeEntryDto> search(Long userId, Long projectId, LocalDate from, LocalDate to) {
         Specification<TimeEntry> spec = Specification.allOf();
         if (userId != null) {
@@ -168,6 +177,17 @@ public class TimeEntryService {
                 entry.getStatus().getId(),
                 entry.getStatus().getName(),
                 entry.getCreatedAt()
+        );
+    }
+
+    private TimeEntryTransitionDto toDto(TimeEntryTransition transition) {
+        return new TimeEntryTransitionDto(
+                transition.getId(),
+                transition.getOldStatus().getName(),
+                transition.getNewStatus().getName(),
+                transition.getChangedBy().getId(),
+                transition.getChangedBy().getFullName(),
+                transition.getCreatedAt()
         );
     }
 }

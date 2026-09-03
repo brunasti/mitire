@@ -6,6 +6,7 @@ import it.brunasti.mitire.backend.service.TimeEntryService;
 import it.brunasti.mitire.backend.service.UserService;
 import it.brunasti.mitire.backend.web.dto.ProjectEntryStatusDto;
 import it.brunasti.mitire.backend.web.dto.TimeEntryDto;
+import it.brunasti.mitire.backend.web.dto.TimeEntryTransitionDto;
 import it.brunasti.mitire.backend.web.dto.UpdateTimeEntryRequest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -13,13 +14,16 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
@@ -55,7 +59,9 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
     private final TextField createdAt = new TextField("Created");
     private final Div statusField = new Div();
     private final NumberField hours = new NumberField("Hours");
-    private final TextField description = new TextField("Description");
+    private final TextArea description = new TextArea("Description");
+
+    private final Grid<TimeEntryTransitionDto> transitionsGrid = new Grid<>(TimeEntryTransitionDto.class, false);
 
     private ComboBox<ProjectEntryStatusDto> statusComboBox;
     private Long entryId;
@@ -76,8 +82,9 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         hours.setStep(0.25);
         hours.setMin(0.25);
         hours.setMax(24);
+        description.setHeight("150px");
 
-        add(buildForm());
+        add(buildForm(), buildTransitionsSection());
     }
 
     @Override
@@ -122,6 +129,7 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
                 statusComboBox = null;
                 statusField.add(new Span(entry.statusName()));
             }
+            transitionsGrid.setItems(timeEntryService.findTransitions(entryId, currentUserId));
         } catch (NoSuchElementException | AccessDeniedException ex) {
             event.rerouteToError(NotFoundException.class, "Time entry not found");
         }
@@ -141,9 +149,24 @@ public class TimeEntryDetailView extends VerticalLayout implements HasUrlParamet
         form.addFormItem(userLink, "User");
         form.addFormItem(statusField, "Status");
         form.add(workDate, createdAt, hours, description);
+        form.setColspan(description, 2);
         form.add(new HorizontalLayout(save, cancel, delete));
         form.setMaxWidth("600px");
         return form;
+    }
+
+    private VerticalLayout buildTransitionsSection() {
+        transitionsGrid.addColumn(TimeEntryTransitionDto::oldStatusName).setHeader("Old status");
+        transitionsGrid.addColumn(TimeEntryTransitionDto::newStatusName).setHeader("New status");
+        transitionsGrid.addColumn(TimeEntryTransitionDto::changedByFullName).setHeader("Changed by");
+        transitionsGrid.addColumn(t -> Formatters.timestamp(t.createdAt())).setHeader("Changed at")
+                .setAutoWidth(true).setFlexGrow(0);
+        transitionsGrid.setAllRowsVisible(true);
+        transitionsGrid.setWidth("600px");
+
+        VerticalLayout section = new VerticalLayout(new H3("Status history"), transitionsGrid);
+        section.setPadding(false);
+        return section;
     }
 
     private void save() {

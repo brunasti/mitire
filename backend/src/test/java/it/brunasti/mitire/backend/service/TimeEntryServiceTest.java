@@ -411,4 +411,79 @@ class TimeEntryServiceTest {
 
         assertThatThrownBy(() -> service.update(99L, 1L, request)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void findTransitionsReturnsHistoryOrderedNewestFirstForTheOwningUser() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+        user.setFullName("Alice Anderson");
+        user.setRole(Role.MEMBER);
+
+        TimeEntry entry = new TimeEntry();
+        entry.setId(99L);
+        entry.setUser(user);
+        entry.setProject(project);
+
+        ProjectEntryStatus submitted = defaultStatus(project);
+        ProjectEntryStatus approved = new ProjectEntryStatus();
+        approved.setId(600L);
+        approved.setProject(project);
+        approved.setName("APPROVED");
+
+        it.brunasti.mitire.backend.domain.TimeEntryTransition transition =
+                new it.brunasti.mitire.backend.domain.TimeEntryTransition();
+        transition.setId(1L);
+        transition.setTimeEntry(entry);
+        transition.setOldStatus(submitted);
+        transition.setNewStatus(approved);
+        transition.setChangedBy(user);
+
+        when(userService.getReference(1L)).thenReturn(user);
+        when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
+        when(timeEntryTransitionRepository.findByTimeEntryIdOrderByCreatedAtDesc(99L))
+                .thenReturn(List.of(transition));
+
+        List<it.brunasti.mitire.backend.web.dto.TimeEntryTransitionDto> history = service.findTransitions(99L, 1L);
+
+        assertThat(history).hasSize(1);
+        assertThat(history.get(0).oldStatusName()).isEqualTo("SUBMITTED");
+        assertThat(history.get(0).newStatusName()).isEqualTo("APPROVED");
+        assertThat(history.get(0).changedByFullName()).isEqualTo("Alice Anderson");
+    }
+
+    @Test
+    void findTransitionsRejectsUserWithoutAccessToTheEntry() {
+        TimeEntryService service = new TimeEntryService(timeEntryRepository, timeEntryTransitionRepository, userService, projectService, projectEntryStatusService);
+
+        Project project = new Project();
+        project.setId(2L);
+        project.setCode("ACME");
+
+        User owner = new User();
+        owner.setId(1L);
+        owner.setUsername("alice");
+        owner.setRole(Role.MEMBER);
+
+        User stranger = new User();
+        stranger.setId(2L);
+        stranger.setUsername("bob");
+        stranger.setRole(Role.MEMBER);
+
+        TimeEntry entry = new TimeEntry();
+        entry.setId(99L);
+        entry.setUser(owner);
+        entry.setProject(project);
+
+        when(userService.getReference(2L)).thenReturn(stranger);
+        when(timeEntryRepository.findById(99L)).thenReturn(java.util.Optional.of(entry));
+
+        assertThatThrownBy(() -> service.findTransitions(99L, 2L)).isInstanceOf(AccessDeniedException.class);
+    }
 }

@@ -184,3 +184,15 @@ Create an extra table time_entry_transition which records, every time the status
 - new_status
 - timestamp
 - user who created the change 
+
+---
+
+**2026-09-03 15:26:59**
+
+IN the http://localhost:8080/time-entries/<id> page, add at the bottom, a list with all the time_entry_transition records relative to that time_entry.
+
+---
+
+**2026-09-03 15:41:18**
+
+In the page http://localhost:8080/time-entries/<id>, change the Description into a TextArea
