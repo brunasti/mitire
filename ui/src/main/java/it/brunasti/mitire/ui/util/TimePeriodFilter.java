@@ -11,9 +11,9 @@ import java.time.temporal.TemporalAdjusters;
 
 /**
  * A "Period" dropdown (all time / last week / a chosen week / last month / a chosen
- * month) paired with a date picker that only appears for the two "chosen" modes, used
- * to pick any day within the desired week or month. {@link #getRange()} resolves the
- * current selection to a concrete [from, to] date range for {@code TimeEntryService.search()}.
+ * month / a single chosen day / a custom from-to range), paired with the date picker(s)
+ * each mode needs. {@link #getRange()} resolves the current selection to a concrete
+ * [from, to] date range for {@code TimeEntryService.search()}.
  */
 public class TimePeriodFilter extends HorizontalLayout {
 
@@ -22,7 +22,9 @@ public class TimePeriodFilter extends HorizontalLayout {
         LAST_WEEK("Last week"),
         SELECTED_WEEK("Select week"),
         LAST_MONTH("Last month"),
-        SELECTED_MONTH("Select month");
+        SELECTED_MONTH("Select month"),
+        SELECTED_DAY("Select day"),
+        CUSTOM_RANGE("From - To");
 
         private final String label;
 
@@ -40,30 +42,44 @@ public class TimePeriodFilter extends HorizontalLayout {
     }
 
     private final Select<Period> period = new Select<>();
-    private final DatePicker anchorDate = new DatePicker();
+    private final DatePicker anchorDate = new DatePicker("Date");
+    private final DatePicker fromDate = new DatePicker("From");
+    private final DatePicker toDate = new DatePicker("To");
 
     public TimePeriodFilter() {
         period.setLabel("Period");
         period.setItems(Period.values());
         period.setValue(Period.ALL_TIME);
 
-        anchorDate.setLabel("Any day in it");
         anchorDate.setValue(LocalDate.now());
         anchorDate.setVisible(false);
         anchorDate.setWidth("160px");
 
-        period.addValueChangeListener(e ->
-                anchorDate.setVisible(e.getValue() == Period.SELECTED_WEEK || e.getValue() == Period.SELECTED_MONTH));
+        fromDate.setVisible(false);
+        fromDate.setWidth("160px");
+        toDate.setVisible(false);
+        toDate.setWidth("160px");
+
+        period.addValueChangeListener(e -> {
+            Period selected = e.getValue();
+            anchorDate.setVisible(selected == Period.SELECTED_WEEK || selected == Period.SELECTED_MONTH
+                    || selected == Period.SELECTED_DAY);
+            boolean customRange = selected == Period.CUSTOM_RANGE;
+            fromDate.setVisible(customRange);
+            toDate.setVisible(customRange);
+        });
 
         setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
         setSpacing(true);
         setPadding(false);
-        add(period, anchorDate);
+        add(period, anchorDate, fromDate, toDate);
     }
 
     public void addFilterChangeListener(Runnable listener) {
         period.addValueChangeListener(e -> listener.run());
         anchorDate.addValueChangeListener(e -> listener.run());
+        fromDate.addValueChangeListener(e -> listener.run());
+        toDate.addValueChangeListener(e -> listener.run());
     }
 
     public DateRange getRange() {
@@ -74,6 +90,8 @@ public class TimePeriodFilter extends HorizontalLayout {
             case SELECTED_WEEK -> weekRange(anchor);
             case LAST_MONTH -> monthRange(LocalDate.now().minusMonths(1));
             case SELECTED_MONTH -> monthRange(anchor);
+            case SELECTED_DAY -> new DateRange(anchor, anchor);
+            case CUSTOM_RANGE -> new DateRange(fromDate.getValue(), toDate.getValue());
         };
     }
 

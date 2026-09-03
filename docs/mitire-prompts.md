@@ -219,3 +219,9 @@ Add some Filters in this and all others Entries lists:
 - per project 
 - per time period (last week, selected week, last month, selected month)
 - per user 
+
+---
+
+**2026-09-03 17:03:38**
+
+IN the Filter per time, add the option to select a single day and a from - to period
