@@ -41,6 +41,7 @@ import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import it.brunasti.mitire.ui.util.Formatters;
 import it.brunasti.mitire.ui.util.Notifications;
+import it.brunasti.mitire.ui.util.TimePeriodFilter;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -78,6 +79,8 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
     private final H2 projectNameLabel = new H2();
 
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
+    private final ComboBox<UserDto> entryUserFilter = new ComboBox<>("User");
+    private final TimePeriodFilter entryPeriodFilter = new TimePeriodFilter();
     private final Grid<UserDto> usersGrid = new Grid<>(UserDto.class, false);
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
     private final Grid<ProjectEntryStatusDto> statusesGrid = new Grid<>(ProjectEntryStatusDto.class, false);
@@ -159,6 +162,8 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         currentApproverId = project.approverId();
         currentOwnerId = project.ownerId();
         List<UserDto> projectUsers = userService.findByProjectAccess(projectId);
+        entryUserFilter.setItems(projectUsers);
+        refreshEntries();
         usersGrid.setItems(projectUsers);
         approver.setItems(projectUsers);
         approver.clear();
@@ -172,7 +177,6 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
         if (ownerId != null) {
             projectUsers.stream().filter(u -> u.id().equals(ownerId)).findFirst().ifPresent(owner::setValue);
         }
-        entriesGrid.setItems(timeEntryService.search(null, projectId, null, null));
         groupsGrid.setItems(groupService.findByProject(projectId));
         refreshStatuses();
     }
@@ -185,6 +189,13 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
     }
 
     private VerticalLayout buildEntriesTab() {
+        entryUserFilter.setItemLabelGenerator(UserDto::username);
+        entryUserFilter.setClearButtonVisible(true);
+        entryUserFilter.addValueChangeListener(e -> refreshEntries());
+        entryPeriodFilter.addFilterChangeListener(this::refreshEntries);
+        HorizontalLayout filters = new HorizontalLayout(entryUserFilter, entryPeriodFilter);
+        filters.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
+
         entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
         entriesGrid.addColumn(TimeEntryDto::hours).setHeader("Hours").setAutoWidth(true).setFlexGrow(0);
@@ -194,9 +205,16 @@ public class ProjectWorkflowView extends VerticalLayout implements HasUrlParamet
                 .setAutoWidth(true).setFlexGrow(0);
         entriesGrid.setSizeFull();
 
-        VerticalLayout layout = new VerticalLayout(entriesGrid);
+        VerticalLayout layout = new VerticalLayout(filters, entriesGrid);
         layout.setSizeFull();
+        layout.setFlexGrow(1, entriesGrid);
         return layout;
+    }
+
+    private void refreshEntries() {
+        Long userId = entryUserFilter.getValue() != null ? entryUserFilter.getValue().id() : null;
+        TimePeriodFilter.DateRange range = entryPeriodFilter.getRange();
+        entriesGrid.setItems(timeEntryService.search(userId, projectId, range.from(), range.to()));
     }
 
     private VerticalLayout buildUsersTab() {

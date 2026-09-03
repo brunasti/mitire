@@ -16,6 +16,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
@@ -28,6 +29,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import it.brunasti.mitire.ui.util.Formatters;
 import it.brunasti.mitire.ui.util.Notifications;
+import it.brunasti.mitire.ui.util.TimePeriodFilter;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -46,6 +48,8 @@ public class TimeEntriesView extends VerticalLayout implements BeforeEnterObserv
     private final List<ProjectDto> operableProjects;
 
     private final Grid<TimeEntryDto> grid = new Grid<>(TimeEntryDto.class, false);
+    private final ComboBox<ProjectDto> projectFilter = new ComboBox<>("Project");
+    private final TimePeriodFilter periodFilter = new TimePeriodFilter();
 
     public TimeEntriesView(TimeEntryService timeEntryService, UserService userService,
                             AuthenticationContext authenticationContext) {
@@ -131,7 +135,15 @@ public class TimeEntriesView extends VerticalLayout implements BeforeEnterObserv
         return form;
     }
 
-    private Grid<TimeEntryDto> buildGrid() {
+    private VerticalLayout buildGrid() {
+        projectFilter.setItems(operableProjects);
+        projectFilter.setItemLabelGenerator(p -> p.code() + " - " + p.name());
+        projectFilter.setClearButtonVisible(true);
+        projectFilter.addValueChangeListener(e -> refreshGrid());
+        periodFilter.addFilterChangeListener(this::refreshGrid);
+        HorizontalLayout filters = new HorizontalLayout(projectFilter, periodFilter);
+        filters.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
+
         grid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         grid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
         grid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true).setAutoWidth(true).setFlexGrow(0);
@@ -143,10 +155,16 @@ public class TimeEntriesView extends VerticalLayout implements BeforeEnterObserv
         grid.setSizeFull();
         grid.getStyle().set("cursor", "pointer");
         grid.addItemClickListener(e -> UI.getCurrent().navigate(TimeEntryDetailView.class, e.getItem().id()));
-        return grid;
+
+        VerticalLayout layout = new VerticalLayout(filters, grid);
+        layout.setSizeFull();
+        layout.setFlexGrow(1, grid);
+        return layout;
     }
 
     private void refreshGrid() {
-        grid.setItems(timeEntryService.search(currentUserId, null, null, null));
+        Long projectId = projectFilter.getValue() != null ? projectFilter.getValue().id() : null;
+        TimePeriodFilter.DateRange range = periodFilter.getRange();
+        grid.setItems(timeEntryService.search(currentUserId, projectId, range.from(), range.to()));
     }
 }

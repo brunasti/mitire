@@ -203,3 +203,19 @@ In the page http://localhost:8080/time-entries/<id>, change the Description into
 
 Enable the possibility of adding notes to an Entity.
 Each note should record the time when it was created, by whom, and a text (edited as a textarea).
+
+---
+
+**2026-09-03 16:21:02**
+
+Rename the "Time entries" voice in the left menu into "My Time Entries"
+
+---
+
+**2026-09-03 16:42:31**
+
+Add for the admin users a "All Time Entries" page with the list of all the created time_entries 
+Add some Filters in this and all others Entries lists:
+- per project 
+- per time period (last week, selected week, last month, selected month)
+- per user 

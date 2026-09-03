@@ -36,6 +36,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import it.brunasti.mitire.ui.util.Notifications;
+import it.brunasti.mitire.ui.util.TimePeriodFilter;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -63,6 +64,8 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
 
     private final ComboBox<GroupDto> addGroup = new ComboBox<>("Add group");
     private final Grid<TimeEntryDto> entriesGrid = new Grid<>(TimeEntryDto.class, false);
+    private final ComboBox<ProjectDto> entryProjectFilter = new ComboBox<>("Project");
+    private final TimePeriodFilter entryPeriodFilter = new TimePeriodFilter();
     private final Grid<GroupDto> groupsGrid = new Grid<>(GroupDto.class, false);
     private final Grid<ProjectDto> projectsGrid = new Grid<>(ProjectDto.class, false);
     private final Grid<ProjectDto> approverGrid = new Grid<>(ProjectDto.class, false);
@@ -88,6 +91,8 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         groups.setItems(allGroups);
         groups.setItemLabelGenerator(GroupDto::name);
         addGroup.setItemLabelGenerator(GroupDto::name);
+        entryProjectFilter.setItems(projectService.findAll());
+        entryProjectFilter.setItemLabelGenerator(p -> p.code() + " - " + p.name());
 
         TabSheet tabSheet = new TabSheet();
         tabSheet.add("User details", buildDetailsTab());
@@ -128,7 +133,7 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         groups.setValue(new HashSet<>(user.groups()));
         enabled.setValue(user.enabled());
 
-        entriesGrid.setItems(timeEntryService.search(userId, null, null, null));
+        refreshEntries();
         refreshComputedTabs(user);
     }
 
@@ -142,6 +147,12 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
     }
 
     private VerticalLayout buildEntriesTab() {
+        entryProjectFilter.setClearButtonVisible(true);
+        entryProjectFilter.addValueChangeListener(e -> refreshEntries());
+        entryPeriodFilter.addFilterChangeListener(this::refreshEntries);
+        HorizontalLayout filters = new HorizontalLayout(entryProjectFilter, entryPeriodFilter);
+        filters.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.END);
+
         entriesGrid.addColumn(TimeEntryDto::workDate).setHeader("Date").setSortable(true).setAutoWidth(true).setFlexGrow(0);
         entriesGrid.addColumn(TimeEntryDto::username).setHeader("User").setSortable(true);
         entriesGrid.addColumn(TimeEntryDto::projectCode).setHeader("Project").setSortable(true).setAutoWidth(true).setFlexGrow(0);
@@ -150,9 +161,16 @@ public class UserDetailView extends VerticalLayout implements HasUrlParameter<Lo
         entriesGrid.addColumn(TimeEntryDto::statusName).setHeader("Status");
         entriesGrid.setSizeFull();
 
-        VerticalLayout layout = new VerticalLayout(entriesGrid);
+        VerticalLayout layout = new VerticalLayout(filters, entriesGrid);
         layout.setSizeFull();
+        layout.setFlexGrow(1, entriesGrid);
         return layout;
+    }
+
+    private void refreshEntries() {
+        Long projectId = entryProjectFilter.getValue() != null ? entryProjectFilter.getValue().id() : null;
+        TimePeriodFilter.DateRange range = entryPeriodFilter.getRange();
+        entriesGrid.setItems(timeEntryService.search(userId, projectId, range.from(), range.to()));
     }
 
     private VerticalLayout buildGroupsTab() {

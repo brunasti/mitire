@@ -67,12 +67,13 @@ public class MainLayout extends AppLayout {
             nav.add(new RouterLink("Projects", ProjectsOverviewView.class));
         } else {
             nav.add(
-                    new RouterLink("Time entries", TimeEntriesView.class),
+                    new RouterLink("My Time Entries", TimeEntriesView.class),
                     new RouterLink("My Projects", MyProjectsView.class)
             );
             if (isAdmin()) {
                 nav.add(
                         new Hr(),
+                        new RouterLink("All Time Entries", AllTimeEntriesView.class),
                         new RouterLink("Projects", ProjectsView.class),
                         new RouterLink("Groups", GroupsView.class),
                         new RouterLink("Users", UsersView.class)
