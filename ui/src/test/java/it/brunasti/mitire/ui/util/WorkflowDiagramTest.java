@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,6 +80,62 @@ class WorkflowDiagramTest {
 
         String html = ((Html) result).getInnerHtml();
         assertThat(html).contains("SUBMITTED").contains("REVIEW").contains("APPROVED").contains("REJECTED");
+
+        // The cycle (REJECTED -> SUBMITTED) must not drag the starting status
+        // rightward: it should still be the leftmost box in the diagram.
+        int submittedX = boxX(html, "SUBMITTED");
+        assertThat(submittedX).isLessThan(boxX(html, "REVIEW"));
+        assertThat(submittedX).isLessThan(boxX(html, "APPROVED"));
+        assertThat(submittedX).isLessThan(boxX(html, "REJECTED"));
+    }
+
+    private static int boxX(String svg, String statusName) {
+        Pattern pattern = Pattern.compile("<rect x=\"(\\d+)\"[^>]*/>\\s*<text[^>]*>" + statusName + "</text>");
+        Matcher matcher = pattern.matcher(svg);
+        assertThat(matcher.find()).as("rect for " + statusName).isTrue();
+        return Integer.parseInt(matcher.group(1));
+    }
+
+    @Test
+    void buildKeepsColumnsContiguousWhenACycleDoesNotTouchTheStartingStatus() {
+        // Mirrors a real seeded workflow: SUBMITTED -> REVIEW -> APPROVED/REJECTED ->
+        // X1 -> REVIEW again, i.e. a cycle entirely among the non-starting statuses.
+        // Naive repeated relaxation keeps pushing REVIEW/APPROVED/REJECTED/X1 further
+        // right on every lap of that cycle, leaving many empty columns between them
+        // and SUBMITTED - which renders as SUBMITTED sitting far away, detached from
+        // the rest of the diagram, even though it's still technically "leftmost".
+        ProjectEntryStatusDto submitted = status(1, "SUBMITTED", 1, true);
+        ProjectEntryStatusDto review = status(2, "REVIEW", 2, false);
+        ProjectEntryStatusDto approved = status(3, "APPROVED", 3, false);
+        ProjectEntryStatusDto rejected = status(4, "REJECTED", 4, false);
+        ProjectEntryStatusDto x1 = status(5, "X1", 5, false);
+
+        Map<Long, List<ProjectEntryStatusDto>> edges = Map.of(
+                1L, List.of(review),
+                2L, List.of(approved, rejected),
+                3L, List.of(x1),
+                4L, List.of(x1),
+                5L, List.of(review)
+        );
+
+        Component result = WorkflowDiagram.build(List.of(submitted, review, approved, rejected, x1),
+                s -> edges.get(s.id()));
+
+        String html = ((Html) result).getInnerHtml();
+        int submittedX = boxX(html, "SUBMITTED");
+        int reviewX = boxX(html, "REVIEW");
+        int approvedX = boxX(html, "APPROVED");
+        int rejectedX = boxX(html, "REJECTED");
+        int x1X = boxX(html, "X1");
+
+        assertThat(submittedX).isLessThan(reviewX);
+        assertThat(reviewX).isLessThan(approvedX);
+        assertThat(reviewX).isLessThan(rejectedX);
+        assertThat(approvedX).isLessThan(x1X);
+        assertThat(rejectedX).isLessThan(x1X);
+        // No box should be stranded far from its neighbor: consecutive columns differ
+        // by one box width plus the fixed gap, never by several empty columns' worth.
+        assertThat(reviewX - submittedX).isLessThan(400);
     }
 
     @Test

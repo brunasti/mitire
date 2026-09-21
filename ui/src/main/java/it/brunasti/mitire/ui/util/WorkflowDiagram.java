@@ -8,8 +8,10 @@ import it.brunasti.mitire.backend.web.dto.ProjectEntryStatusDto;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -213,48 +215,74 @@ public final class WorkflowDiagram {
      * A status with no parents starts at column 0; each transition can only push its
      * target at least one column further right than its source.
      *
-     * <p>This is computed by repeated relaxation (Bellman-Ford style, since a workflow's
-     * dependency graph is small and admins can, in principle, create an invalid one with
-     * a cycle - see {@code ProjectEntryStatusService}, which does no cycle detection):
-     * each round walks every status and pushes each of its children to at least
-     * {@code parentLevel + 1}, repeating until a round makes no more changes.
-     *
-     * <p>In an acyclic graph with n statuses, the longest possible path has at most
-     * n-1 transitions, so levels are fully settled after at most n-1 rounds - one more
-     * round could only ever find something new if a cycle keeps pushing a level higher
-     * forever. That's exactly the bound used below: it's the fewest rounds that still
-     * guarantees a correct, fully-converged layout for any real (acyclic) workflow,
-     * while also being what stops the loop promptly if the graph does contain a cycle.
+     * <p>Levels are computed by a DFS (starting from the workflow's starting status, so
+     * it anchors column 0) that also does a topological sort: any transition that points
+     * back to a status still on the current DFS path (an ancestor) is a genuine cycle in
+     * the workflow - e.g. a "resubmit" transition - and is recorded as a back edge rather
+     * than followed. Levels are then relaxed once, in topological order, over everything
+     * <em>except</em> those back edges. Two things fall out of doing it this way instead
+     * of naive repeated relaxation: it terminates in a single pass regardless of how the
+     * graph's cycles are shaped (nothing can push a level over and over), and it never
+     * leaves gaps in the column numbering - every level from 0 up to the maximum has at
+     * least one status in it - because reaching column k this way always means passing
+     * through a status at every column below it first.
      */
     private static Map<Long, Integer> computeLevels(List<ProjectEntryStatusDto> statuses,
                                                       Function<ProjectEntryStatusDto, List<ProjectEntryStatusDto>> childrenLookup) {
-        System.err.println("computeLevels - 1");
         Map<Long, Integer> level = new HashMap<>();
         for (ProjectEntryStatusDto status : statuses) {
             level.put(status.id(), 0);
         }
-        int maxRounds = statuses.size() - 1;
-        for (int round = 0; round < maxRounds; round++) {
-            boolean changed = false;
-            for (ProjectEntryStatusDto status : statuses) {
-                int parentLevel = level.get(status.id());
-                for (ProjectEntryStatusDto child : childrenLookup.apply(status)) {
-                    if (parentLevel + 1 > level.getOrDefault(child.id(), 0)) {
-                        level.put(child.id(), parentLevel + 1);
-                        changed = true;
-                    }
-                }
-            }
-            if (!changed) {
-                break;
+
+        List<ProjectEntryStatusDto> dfsRoots = new ArrayList<>();
+        statuses.stream().filter(ProjectEntryStatusDto::startingStatus).findFirst().ifPresent(dfsRoots::add);
+        for (ProjectEntryStatusDto status : statuses) {
+            if (!dfsRoots.contains(status)) {
+                dfsRoots.add(status);
             }
         }
 
-        System.err.println("computeLevels - 99 ["+level+"]");
-        for (Long l : level.keySet()) {
-            System.err.println("computeLevels - 99 - l ["+l+"] ["+level.get(l)+"]");
+        Set<Long> visiting = new HashSet<>();
+        Set<Long> finished = new HashSet<>();
+        List<Long> postOrder = new ArrayList<>();
+        Map<Long, List<Long>> forwardChildren = new HashMap<>();
+        for (ProjectEntryStatusDto root : dfsRoots) {
+            if (!finished.contains(root.id())) {
+                dfsVisit(root, childrenLookup, visiting, finished, postOrder, forwardChildren);
+            }
         }
+
+        // postOrder lists every status in DFS finish order; reversing it gives a valid
+        // topological order of the forward-edge-only graph, so each status's level is
+        // final by the time it's used as a parent below.
+        for (int i = postOrder.size() - 1; i >= 0; i--) {
+            Long id = postOrder.get(i);
+            int parentLevel = level.get(id);
+            for (Long childId : forwardChildren.getOrDefault(id, List.of())) {
+                level.put(childId, Math.max(level.get(childId), parentLevel + 1));
+            }
+        }
+
         return level;
+    }
+
+    private static void dfsVisit(ProjectEntryStatusDto status,
+                                  Function<ProjectEntryStatusDto, List<ProjectEntryStatusDto>> childrenLookup,
+                                  Set<Long> visiting, Set<Long> finished,
+                                  List<Long> postOrder, Map<Long, List<Long>> forwardChildren) {
+        visiting.add(status.id());
+        for (ProjectEntryStatusDto child : childrenLookup.apply(status)) {
+            if (visiting.contains(child.id())) {
+                continue; // back edge: closes a cycle, excluded from layering
+            }
+            forwardChildren.computeIfAbsent(status.id(), k -> new ArrayList<>()).add(child.id());
+            if (!finished.contains(child.id())) {
+                dfsVisit(child, childrenLookup, visiting, finished, postOrder, forwardChildren);
+            }
+        }
+        visiting.remove(status.id());
+        finished.add(status.id());
+        postOrder.add(status.id());
     }
 
     private static String escapeXml(String text) {

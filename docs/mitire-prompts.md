@@ -257,3 +257,37 @@ There is too much space around the core part of the diagrams. Can you reduce the
 **2026-09-03 18:43:47**
 
 The drawing of the diagram is complex, could youput some comment in the code so that I can understand how it works? I think that the computeLevels functions goes too deep: there can not be more levels then the actual number of statuses...
+
+---
+
+**2026-09-21 15:14:53**
+
+Hi Claude, could you please refactor the 
+
+<pasted_content id="e1bf">
+it.brunasti.mitire.ui.util.WorkflowDiagram#build
+</pasted_content id="e1bf">
+
+ method so that the starting status is always the one most to the left?
+
+---
+
+**2026-09-21 15:53:25**
+
+I changed the structure of the oriject 3, and in the diagram the starting status is not visible, far far on the left, very detached from the other. You can see it at 
+
+<pasted_content id="e1bf">
+http://localhost:8080/projects/3
+</pasted_content id="e1bf">
+
+---
+
+**2026-09-21 16:05:20**
+
+In the project 2 ( 
+
+<pasted_content id="e1bf">
+http://localhost:8080/projects/2
+</pasted_content id="e1bf">
+
+ ) the diagram don't show some of the links between statuses because they overlap on other links. How can we change it? Could we put the statuses in a diagonal way and draw the links as horizontal and then vertical lines?
