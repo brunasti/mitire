@@ -6,6 +6,7 @@ import com.vaadin.flow.component.html.Span;
 import it.brunasti.mitire.backend.web.dto.ProjectEntryStatusDto;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -136,6 +137,93 @@ class WorkflowDiagramTest {
         // No box should be stranded far from its neighbor: consecutive columns differ
         // by one box width plus the fixed gap, never by several empty columns' worth.
         assertThat(reviewX - submittedX).isLessThan(400);
+    }
+
+    @Test
+    void buildRoutesEveryTransitionAsADistinctOrthogonalPath() {
+        // Mirrors a real seeded workflow that renders as a single-file chain (one status
+        // per column): SUBMITTED -> APPROVED -> REJECTED -> OTHER -> VERYLONGNAME, plus a
+        // skip transition (SUBMITTED -> REJECTED) and a cycle back to the start
+        // (OTHER -> SUBMITTED). Without the diagonal stagger every one of these six
+        // transitions is drawn on the exact same horizontal line - so most of them are
+        // invisible under the others. Each arrow's path must be its own distinct line.
+        ProjectEntryStatusDto submitted = status(1, "SUBMITTED", 1, true);
+        ProjectEntryStatusDto approved = status(2, "APPROVED", 2, false);
+        ProjectEntryStatusDto rejected = status(3, "REJECTED", 3, false);
+        ProjectEntryStatusDto other = status(4, "OTHER", 4, false);
+        ProjectEntryStatusDto veryLongName = status(5, "VERYLONGNAME", 5, false);
+
+        Map<Long, List<ProjectEntryStatusDto>> edges = Map.of(
+                1L, List.of(approved, rejected),
+                2L, List.of(rejected),
+                3L, List.of(other),
+                4L, List.of(submitted, veryLongName),
+                5L, List.of()
+        );
+
+        Component result = WorkflowDiagram.build(
+                List.of(submitted, approved, rejected, other, veryLongName), s -> edges.get(s.id()));
+
+        String html = ((Html) result).getInnerHtml();
+        List<String> paths = extractPaths(html);
+        assertThat(paths).hasSize(6);
+        // The 5 forward transitions are each an orthogonal (horizontal/vertical/
+        // horizontal) elbow; the 1 back transition (OTHER -> SUBMITTED, a cycle) drops
+        // from the bottom instead (vertical/horizontal/vertical) - see the dedicated
+        // test below. Either way, no two transitions are drawn as the literal same line.
+        long forwardShaped = paths.stream().filter(p -> p.matches("M\\d+,\\d+ H\\d+ V\\d+ H\\d+")).count();
+        long backShaped = paths.stream().filter(p -> p.matches("M\\d+,\\d+ V\\d+ H\\d+ V\\d+")).count();
+        assertThat(forwardShaped).isEqualTo(5);
+        assertThat(backShaped).isEqualTo(1);
+        assertThat(paths).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void buildRoutesBackEdgesFromTheBottomOfTheParentIntoTheBottomOfTheChild() {
+        // Same cyclic workflow as buildTerminatesAndRendersAllNodesWhenTheWorkflowGraphHasACycle:
+        // SUBMITTED -> REVIEW -> APPROVED/REJECTED, and REJECTED -> SUBMITTED (a cycle).
+        ProjectEntryStatusDto submitted = status(1, "SUBMITTED", 1, true);
+        ProjectEntryStatusDto review = status(2, "REVIEW", 2, false);
+        ProjectEntryStatusDto approved = status(3, "APPROVED", 3, false);
+        ProjectEntryStatusDto rejected = status(4, "REJECTED", 4, false);
+
+        Map<Long, List<ProjectEntryStatusDto>> edges = Map.of(
+                1L, List.of(review),
+                2L, List.of(approved, rejected),
+                3L, List.of(),
+                4L, List.of(submitted)
+        );
+
+        Component result = WorkflowDiagram.build(List.of(submitted, review, approved, rejected),
+                s -> edges.get(s.id()));
+
+        String html = ((Html) result).getInnerHtml();
+        List<String> paths = extractPaths(html);
+        List<String> backEdgePaths = paths.stream().filter(p -> p.matches("M\\d+,\\d+ V\\d+ H\\d+ V\\d+")).toList();
+        assertThat(backEdgePaths).hasSize(1);
+
+        Matcher startMatcher = Pattern.compile("^M(\\d+),(\\d+)").matcher(backEdgePaths.get(0));
+        assertThat(startMatcher.find()).isTrue();
+        int startY = Integer.parseInt(startMatcher.group(2));
+        // REJECTED (the parent of the cycle edge) - the line must start exactly at the
+        // bottom of its box, not its side or middle.
+        assertThat(startY).isEqualTo(boxY(html, "REJECTED") + 46);
+    }
+
+    private static List<String> extractPaths(String svg) {
+        Matcher pathMatcher = Pattern.compile("<path d=\"(M[^\"]+)\" fill=\"none\"").matcher(svg);
+        List<String> paths = new ArrayList<>();
+        while (pathMatcher.find()) {
+            paths.add(pathMatcher.group(1));
+        }
+        return paths;
+    }
+
+    private static int boxY(String svg, String statusName) {
+        Pattern pattern = Pattern.compile("<rect x=\"\\d+\" y=\"(\\d+)\"[^>]*/>\\s*<text[^>]*>" + statusName + "</text>");
+        Matcher matcher = pattern.matcher(svg);
+        assertThat(matcher.find()).as("rect for " + statusName).isTrue();
+        return Integer.parseInt(matcher.group(1));
     }
 
     @Test

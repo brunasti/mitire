@@ -291,3 +291,9 @@ http://localhost:8080/projects/2
 </pasted_content id="e1bf">
 
  ) the diagram don't show some of the links between statuses because they overlap on other links. How can we change it? Could we put the statuses in a diagonal way and draw the links as horizontal and then vertical lines?
+
+---
+
+**2026-09-21 16:13:07**
+
+OK, the links which go backward, could we make them start from the bottom of the object?

@@ -34,6 +34,22 @@ public final class WorkflowDiagram {
     private static final int ROW_GAP = 18;
     private static final int COLUMN_GAP = 70;
     private static final int MARGIN = 8;
+    // Each column is also shifted down by one extra step per column, staggering the
+    // whole layout diagonally. Without this, workflows that are mostly a single chain
+    // (one status per column) put every box on the same row, so distinct transitions -
+    // especially a transition that skips a column, or a cycle edge going back several
+    // columns - end up drawn as the exact same horizontal line and become
+    // indistinguishable. Must clear more than half a box's height (NODE_HEIGHT / 2) so
+    // an edge's long horizontal run at one column's row is guaranteed to pass above or
+    // below any box in a column between it and where it bends; see the comment on the
+    // arrow-drawing pass below for why that guarantee holds.
+    private static final int DIAGONAL_STEP = 32;
+    // Back edges (real cycles in the workflow, e.g. a "resubmit" transition) are routed
+    // through a shared lane below the deepest box (see the pass 3 comment). GAP is how
+    // far below the deepest box the first lane sits; STEP is the spacing between lanes
+    // when there's more than one back edge, so they don't run on top of each other.
+    private static final int BACK_EDGE_LANE_GAP = 20;
+    private static final int BACK_EDGE_LANE_STEP = 16;
     // A status box is sized to fit its name: roughly CHAR_WIDTH px per character, plus
     // NODE_PADDING for the left/right inset, with a floor so short names still look boxy.
     private static final int CHAR_WIDTH = 8;
@@ -82,8 +98,10 @@ public final class WorkflowDiagram {
         // diagram's vertical order matches the Workflow tab's grid). Each column is as
         // wide as its widest status box, so narrower columns don't waste horizontal
         // space; `position` remembers where every status ended up so pass 3 and pass 4
-        // can both look it up by id.
-        Map<Long, int[]> position = new HashMap<>(); // statusId -> [x, y, boxWidth]
+        // can both look it up by id. Each column also starts DIAGONAL_STEP px lower than
+        // the previous one (see the field comment) so the whole diagram staggers
+        // diagonally instead of every column sharing the same rows.
+        Map<Long, int[]> position = new HashMap<>(); // statusId -> [x, y, boxWidth, col]
         int x = MARGIN;
         for (int col = min; col < columnCount; col++) {
             System.err.println("WorkflowDiagram - 2.1 ["+col+"]");
@@ -93,7 +111,7 @@ public final class WorkflowDiagram {
             int columnWidth = column.stream()
                     .mapToInt(s -> Math.max(90, s.name().length() * CHAR_WIDTH + NODE_PADDING))
                     .max().orElse(90);
-            int y = MARGIN;
+            int y = MARGIN + col * DIAGONAL_STEP;
             for (ProjectEntryStatusDto status : column) {
                 System.err.println("WorkflowDiagram - 2.2 - ["+status.name()+"]");
                 position.put(status.id(), new int[]{x, y, columnWidth, col});
@@ -103,16 +121,37 @@ public final class WorkflowDiagram {
         }
 
         System.err.println("WorkflowDiagram - 3");
+        // Split transitions into "forward" (child column > parent column) and "back" (a
+        // real cycle in the workflow, e.g. a "resubmit" transition) so pass 3 below can
+        // route the two differently.
+        List<int[][]> forwardEdges = new ArrayList<>();
+        List<int[][]> backEdges = new ArrayList<>();
+        for (ProjectEntryStatusDto status : statuses) {
+            for (ProjectEntryStatusDto child : childrenLookup.apply(status)) {
+                int[] from = position.get(status.id());
+                int[] to = position.get(child.id());
+                if (from == null || to == null) {
+                    continue;
+                }
+                (to[3] > from[3] ? forwardEdges : backEdges).add(new int[][]{from, to});
+            }
+        }
+
         // The SVG is sized exactly to its content (x already sits one COLUMN_GAP past
         // the last column, hence subtracting it back out) plus a fixed MARGIN on every
         // side, so there's no dead space baked into the image itself for the wrapping
-        // <div> (see the bottom of this method) to have to trim away.
+        // <div> (see the bottom of this method) to have to trim away. Height is driven
+        // off the actual bottom-most box rather than a uniform row count, since the
+        // diagonal stagger above means later columns sit lower even when they don't
+        // have more rows than earlier ones - and, if there are any back edges, extended
+        // further to fit their shared lane(s) below that.
         int width = x - COLUMN_GAP + MARGIN;
-        int maxRows = byLevel.values().stream().mapToInt(List::size).max().orElse(1);
-        int height = maxRows * NODE_HEIGHT + (maxRows - 1) * ROW_GAP + 2 * MARGIN;
+        int contentBottom = position.values().stream().mapToInt(p -> p[1] + NODE_HEIGHT).max().orElse(NODE_HEIGHT);
+        int backEdgeLaneBottom = backEdges.isEmpty() ? contentBottom
+                : contentBottom + BACK_EDGE_LANE_GAP + (backEdges.size() - 1) * BACK_EDGE_LANE_STEP;
+        int height = Math.max(contentBottom, backEdgeLaneBottom) + MARGIN;
 
         System.err.println("WorkflowDiagram - 3 - width " + width);
-        System.err.println("WorkflowDiagram - 3 - maxRows " + maxRows);
         System.err.println("WorkflowDiagram - 3 - height " + height);
 
         StringBuilder svg = new StringBuilder();
@@ -130,32 +169,50 @@ public final class WorkflowDiagram {
                 + "<path d=\"M0,0 L10,5 L0,10 z\" fill=\"var(--lumo-contrast-60pct)\"/></marker></defs>");
 
         System.err.println("WorkflowDiagram - 5");
-        // Pass 3: one curved arrow per allowed transition, drawn before the boxes so the
-        // boxes (opaque fill) paint over the line's start/end, leaving a clean edge.
-        for (ProjectEntryStatusDto status : statuses) {
-            for (ProjectEntryStatusDto child : childrenLookup.apply(status)) {
-                int[] from = position.get(status.id());
-                int[] to = position.get(child.id());
-                if (from == null || to == null) {
-                    continue;
-                }
-                // Start at the middle of the parent's right edge, end at the middle of
-                // the child's left edge, with a cubic bezier whose control points sit
-                // halfway between them (at each end's own height) - the standard
-                // "flowchart S-curve" shape, which also degrades gracefully into a
-                // straight line when the two boxes are at the same height.
-                int x1 = from[0] + from[2];
-                int y1 = from[1] + NODE_HEIGHT / 2;
-                int x2 = to[0];
-                int y2 = to[1] + NODE_HEIGHT / 2;
-                int midX = (x1 + x2) / 2;
-                svg.append("<path d=\"M").append(x1).append(',').append(y1)
-                        .append(" C").append(midX).append(',').append(y1)
-                        .append(' ').append(midX).append(',').append(y2)
-                        .append(' ').append(x2).append(',').append(y2)
-                        .append("\" fill=\"none\" stroke=\"var(--lumo-contrast-60pct)\" stroke-width=\"1.5\" "
-                                + "marker-end=\"url(#wf-arrow)\"/>");
-            }
+        // Pass 3a: forward transitions, drawn before the boxes so the boxes (opaque
+        // fill) paint over the line's start/end, leaving a clean edge. Each is a
+        // right-angle "elbow": it leaves the parent's right edge, runs horizontally at
+        // the PARENT's row to a bend point just before the child's column, then
+        // drops/rises vertically and enters the child's left edge horizontally.
+        // Routing the long horizontal run at the PARENT's row, not the child's, is what
+        // keeps it from cutting through any box in a column it passes over: an earlier
+        // column always sits higher (see DIAGONAL_STEP), so the parent's row clears
+        // every column between it and the bend. The vertical segment itself is always
+        // in a column GAP, which never has a box in it.
+        for (int[][] edge : forwardEdges) {
+            int[] from = edge[0];
+            int[] to = edge[1];
+            int y1 = from[1] + NODE_HEIGHT / 2;
+            int y2 = to[1] + NODE_HEIGHT / 2;
+            int x1 = from[0] + from[2];
+            int x2 = to[0];
+            int bendX = x2 - COLUMN_GAP / 2;
+            svg.append("<path d=\"M").append(x1).append(',').append(y1)
+                    .append(" H").append(bendX).append(" V").append(y2).append(" H").append(x2)
+                    .append("\" fill=\"none\" stroke=\"var(--lumo-contrast-60pct)\" stroke-width=\"1.5\" "
+                            + "marker-end=\"url(#wf-arrow)\"/>");
+        }
+
+        // Pass 3b: back transitions (real cycles, e.g. a "resubmit"). These read very
+        // differently from a forward transition on purpose: instead of leaving from a
+        // side, the line drops straight down out of the BOTTOM of the parent box, into
+        // a lane below every box in the diagram (each back edge gets its own lane,
+        // BACK_EDGE_LANE_STEP apart, so several don't run on top of each other), runs
+        // left or right there, then rises back up into the BOTTOM of the child box.
+        // Since the lane is below the deepest box, its horizontal run can never cut
+        // through anything, so this needs no per-column bend point at all.
+        for (int i = 0; i < backEdges.size(); i++) {
+            int[] from = backEdges.get(i)[0];
+            int[] to = backEdges.get(i)[1];
+            int x1 = from[0] + from[2] / 2;
+            int y1 = from[1] + NODE_HEIGHT;
+            int laneY = contentBottom + BACK_EDGE_LANE_GAP + i * BACK_EDGE_LANE_STEP;
+            int x2 = to[0] + to[2] / 2;
+            int y2 = to[1] + NODE_HEIGHT;
+            svg.append("<path d=\"M").append(x1).append(',').append(y1)
+                    .append(" V").append(laneY).append(" H").append(x2).append(" V").append(y2)
+                    .append("\" fill=\"none\" stroke=\"var(--lumo-contrast-60pct)\" stroke-width=\"1.5\" "
+                            + "marker-end=\"url(#wf-arrow)\"/>");
         }
 
         System.err.println("WorkflowDiagram - 6");
