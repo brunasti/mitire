@@ -297,3 +297,9 @@ http://localhost:8080/projects/2
 **2026-09-21 16:13:07**
 
 OK, the links which go backward, could we make them start from the bottom of the object?
+
+---
+
+**2026-09-22 11:49:02**
+
+Could you do a document which describes all the prompts you would have needed to create this system from scratch? Could you write it in docs/requirements.md ?
